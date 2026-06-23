@@ -81,6 +81,13 @@ export default function Home() {
           Guests scan a QR code to instantly upload photos and videos to your event gallery.
         </p>
       </div>
+
+      <a
+        href="/owner"
+        style={{ position: 'fixed', bottom: 20, right: 20, fontSize: 11, color: 'rgba(240,240,255,0.2)', textDecoration: 'none', zIndex: 10 }}
+      >
+        owner
+      </a>
     </main>
   )
 }
