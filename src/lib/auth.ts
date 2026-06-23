@@ -10,10 +10,17 @@ export async function createAdminToken(eventId: string) {
     .sign(secret)
 }
 
+export async function createOwnerToken() {
+  return new SignJWT({ role: 'owner' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setExpirationTime('30d')
+    .sign(secret)
+}
+
 export async function verifyToken(token: string) {
   try {
     const { payload } = await jwtVerify(token, secret)
-    return payload as { eventId: string; role: string }
+    return payload as { eventId?: string; role: string }
   } catch {
     return null
   }
@@ -28,6 +35,15 @@ export async function getAdminSession(eventId: string) {
   return payload
 }
 
+export async function getOwnerSession() {
+  const store = await cookies()
+  const token = store.get('owner_session')?.value
+  if (!token) return null
+  const payload = await verifyToken(token)
+  if (!payload || payload.role !== 'owner') return null
+  return payload
+}
+
 export function setAdminCookie(
   res: { cookies: { set: Function } },
   eventId: string,
@@ -38,6 +54,16 @@ export function setAdminCookie(
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 7,
+    path: '/',
+  })
+}
+
+export function setOwnerCookie(res: { cookies: { set: Function } }, token: string) {
+  res.cookies.set('owner_session', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 30,
     path: '/',
   })
 }

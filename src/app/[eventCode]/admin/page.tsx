@@ -40,7 +40,6 @@ export default function AdminPage() {
   const [uploads, setUploads] = useState<Upload[]>([])
   const [galleryLoading, setGalleryLoading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [downloading, setDownloading] = useState(false)
   const [lightbox, setLightbox] = useState<Upload | null>(null)
   const [showQr, setShowQr] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -105,23 +104,12 @@ export default function AdminPage() {
     if (lightbox?.id === id) setLightbox(null)
   }
 
-  async function downloadAll() {
-    setDownloading(true)
-    try {
-      const res = await fetch(`/api/events/${code}/download`)
-      if (!res.ok) throw new Error('Failed to start download')
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${event?.name || code}_photos.zip`
-      a.click()
-      URL.revokeObjectURL(url)
-    } catch (e) {
-      alert('Download failed. Please try again.')
-    } finally {
-      setDownloading(false)
-    }
+  function downloadAll() {
+    const a = document.createElement('a')
+    a.href = `/api/events/${code}/download`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
   }
 
   function copyGuestLink() {
@@ -202,8 +190,8 @@ export default function AdminPage() {
             <button onClick={loadGallery} disabled={galleryLoading} className="btn-circle" style={{ width: 40, height: 40 }} title="Refresh">
               {galleryLoading ? <SpinnerIcon size={16} /> : <RefreshIcon size={18} />}
             </button>
-            <button onClick={downloadAll} disabled={downloading || uploads.length === 0} className="btn-circle" style={{ width: 40, height: 40 }} title="Download all">
-              {downloading ? <SpinnerIcon size={16} /> : <DownloadIcon size={18} />}
+            <button onClick={downloadAll} disabled={uploads.length === 0} className="btn-circle" style={{ width: 40, height: 40 }} title="Download all">
+              <DownloadIcon size={18} />
             </button>
             <button onClick={logout} className="btn-circle" style={{ width: 40, height: 40 }} title="Sign out">
               <LogOutIcon size={18} />
