@@ -8,9 +8,9 @@ import { v4 as uuid } from 'uuid'
 export const dynamic = 'force-dynamic'
 
 const MAX_PHOTO = 20 * 1024 * 1024
-const MAX_VIDEO = 150 * 1024 * 1024
+const MAX_VIDEO = 75 * 1024 * 1024
 const ALLOWED_IMAGE = new Set(['image/jpeg', 'image/png', 'image/heic', 'image/heif', 'image/webp'])
-const ALLOWED_VIDEO = new Set(['video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v'])
+const ALLOWED_VIDEO = new Set(['video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v', 'video/3gpp', 'video/3gpp2'])
 
 export async function POST(
   req: NextRequest,
@@ -24,8 +24,9 @@ export async function POST(
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
     }
 
-    const isImage = ALLOWED_IMAGE.has(mimeType)
-    const isVideo = ALLOWED_VIDEO.has(mimeType)
+    const baseMime = mimeType.split(';')[0].trim().toLowerCase()
+    const isImage = ALLOWED_IMAGE.has(baseMime)
+    const isVideo = ALLOWED_VIDEO.has(baseMime)
 
     if (!isImage && !isVideo) {
       return NextResponse.json({ error: 'File type not allowed' }, { status: 400 })

@@ -33,7 +33,7 @@ export default function CameraView({ onCapture }: Props) {
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const MAX_SECS = 90
+  const MAX_SECS = 30
 
   const startCamera = useCallback(async () => {
     if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop())
