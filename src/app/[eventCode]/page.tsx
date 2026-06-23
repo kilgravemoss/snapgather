@@ -41,6 +41,12 @@ function getOrCreateSessionId(): string {
   return id
 }
 
+const FIVE_HOURS = 5 * 60 * 60 * 1000
+
+function saveLastEvent(eventCode: string, name: string) {
+  localStorage.setItem('sg_last_event', JSON.stringify({ eventCode, name, ts: Date.now() }))
+}
+
 export default function GuestPage() {
   const { eventCode } = useParams<{ eventCode: string }>()
   const code = eventCode.toUpperCase()
@@ -64,6 +70,7 @@ export default function GuestPage() {
       .then((data) => {
         if (!data) { setNotFound(true); return }
         setEvent(data)
+        saveLastEvent(data.eventCode, data.name)
         setPhase('camera')
       })
   }, [code])

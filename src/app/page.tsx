@@ -1,13 +1,30 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+
+const FIVE_HOURS = 5 * 60 * 60 * 1000
+
+function getLastEvent(): { eventCode: string; name: string } | null {
+  try {
+    const raw = localStorage.getItem('sg_last_event')
+    if (!raw) return null
+    const data = JSON.parse(raw)
+    if (Date.now() - data.ts > FIVE_HOURS) { localStorage.removeItem('sg_last_event'); return null }
+    return data
+  } catch { return null }
+}
 
 export default function Home() {
   const router = useRouter()
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [lastEvent, setLastEvent] = useState<{ eventCode: string; name: string } | null>(null)
+
+  useEffect(() => {
+    setLastEvent(getLastEvent())
+  }, [])
 
   async function join(e: React.FormEvent) {
     e.preventDefault()
@@ -42,6 +59,21 @@ export default function Home() {
           <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.5px' }}>SnapGather</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 15 }}>Capture every moment, together</p>
         </div>
+
+        {/* Continue card — only shows within 5 hours of last visit */}
+        {lastEvent && (
+          <button
+            onClick={() => router.push(`/${lastEvent.eventCode}`)}
+            className="glass w-full fade-up"
+            style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid rgba(139,92,246,0.3)', cursor: 'pointer', background: 'rgba(139,92,246,0.08)', textAlign: 'left' }}
+          >
+            <div>
+              <p style={{ fontSize: 11, color: 'var(--purple)', fontWeight: 600, marginBottom: 3 }}>CONTINUE</p>
+              <p style={{ fontSize: 15, fontWeight: 600 }}>{lastEvent.name}</p>
+            </div>
+            <span style={{ fontSize: 20 }}>→</span>
+          </button>
+        )}
 
         {/* Join card */}
         <div className="glass w-full p-6 flex flex-col gap-4">

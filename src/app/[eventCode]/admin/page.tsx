@@ -61,6 +61,7 @@ export default function AdminPage() {
     if (res.ok) {
       const data = await res.json()
       setUploads(data.uploads)
+      setPhase('gallery')
     }
     setGalleryLoading(false)
   }, [code])
