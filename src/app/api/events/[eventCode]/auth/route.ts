@@ -7,12 +7,13 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { eventCode: string } }
+  { params }: { params: Promise<{ eventCode: string }> }
 ) {
+  const { eventCode } = await params
   const { password } = await req.json()
 
   const event = await prisma.event.findUnique({
-    where: { eventCode: params.eventCode.toUpperCase() },
+    where: { eventCode: eventCode.toUpperCase() },
   })
   if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 })
 
@@ -27,10 +28,11 @@ export async function POST(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { eventCode: string } }
+  { params }: { params: Promise<{ eventCode: string }> }
 ) {
+  const { eventCode } = await params
   const event = await prisma.event.findUnique({
-    where: { eventCode: params.eventCode.toUpperCase() },
+    where: { eventCode: eventCode.toUpperCase() },
     select: { id: true },
   })
   const res = NextResponse.json({ ok: true })

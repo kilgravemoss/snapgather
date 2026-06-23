@@ -6,9 +6,10 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { eventCode: string } }
+  { params }: { params: Promise<{ eventCode: string }> }
 ) {
-  const code = params.eventCode.toUpperCase()
+  const { eventCode } = await params
+  const code = eventCode.toUpperCase()
   const event = await prisma.event.findUnique({
     where: { eventCode: code },
     select: { id: true },

@@ -9,10 +9,11 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { eventCode: string } }
+  { params }: { params: Promise<{ eventCode: string }> }
 ) {
+  const { eventCode } = await params
   const event = await prisma.event.findUnique({
-    where: { eventCode: params.eventCode.toUpperCase() },
+    where: { eventCode: eventCode.toUpperCase() },
     select: { id: true },
   })
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -50,9 +51,10 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { eventCode: string } }
+  { params }: { params: Promise<{ eventCode: string }> }
 ) {
   try {
+    const { eventCode } = await params
     const { key, fileName, fileType, mimeType, fileSize, note, sessionId } = await req.json()
 
     if (!key || !fileName || !fileType || !mimeType || !fileSize || !sessionId) {
@@ -60,7 +62,7 @@ export async function POST(
     }
 
     const event = await prisma.event.findUnique({
-      where: { eventCode: params.eventCode.toUpperCase() },
+      where: { eventCode: eventCode.toUpperCase() },
       select: { id: true },
     })
     if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 })

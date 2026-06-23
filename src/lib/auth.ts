@@ -20,7 +20,7 @@ export async function verifyToken(token: string) {
 }
 
 export async function getAdminSession(eventId: string) {
-  const store = cookies()
+  const store = await cookies()
   const token = store.get(`admin_${eventId}`)?.value
   if (!token) return null
   const payload = await verifyToken(token)

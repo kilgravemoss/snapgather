@@ -14,9 +14,10 @@ const ALLOWED_VIDEO = new Set(['video/mp4', 'video/webm', 'video/quicktime', 'vi
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { eventCode: string } }
+  { params }: { params: Promise<{ eventCode: string }> }
 ) {
   try {
+    const { eventCode } = await params
     const { fileName, mimeType, fileSize, sessionId } = await req.json()
 
     if (!fileName || !mimeType || !fileSize || !sessionId) {
@@ -37,7 +38,7 @@ export async function POST(
     }
 
     const event = await prisma.event.findUnique({
-      where: { eventCode: params.eventCode.toUpperCase() },
+      where: { eventCode: eventCode.toUpperCase() },
       select: { id: true },
     })
     if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 })
