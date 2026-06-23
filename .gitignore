@@ -4,3 +4,23 @@
 node_modules/
 .DS_Store
 *.log
+
+# Ignore existing media files in this folder
+*.jpg
+*.jpeg
+*.JPG
+*.JPEG
+*.png
+*.PNG
+*.gif
+*.webp
+*.heic
+*.HEIC
+*.mp4
+*.MP4
+*.mov
+*.MOV
+*.avi
+*.mkv
+*.webm
+*.m4v
