@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Event {
+  id           String   @id @default(cuid())
+  name         String
+  eventCode    String   @unique
+  description  String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+  uploads      Upload[]
+}
+
+model Upload {
+  id         String   @id @default(cuid())
+  eventId    String
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  sessionId  String
+  storageKey String
+  fileName   String
+  fileType   String
+  mimeType   String
+  fileSize   Int
+  note       String?
+  createdAt  DateTime @default(now())
+
+  @@index([eventId])
+  @@index([sessionId])
+}
