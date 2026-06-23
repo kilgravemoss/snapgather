@@ -16,7 +16,9 @@ export async function GET(
   })
   if (!event) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || `${req.nextUrl.protocol}//${req.nextUrl.host}`
+  let appUrl = process.env.NEXT_PUBLIC_APP_URL || `${req.nextUrl.protocol}//${req.nextUrl.host}`
+  if (!appUrl.startsWith('http')) appUrl = `https://${appUrl}`
+  appUrl = appUrl.replace(/\/$/, '')
   const url = `${appUrl}/${code}`
 
   const buffer = await QRCode.toBuffer(url, {
