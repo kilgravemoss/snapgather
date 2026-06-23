@@ -26,7 +26,7 @@ export async function GET(
     color: { dark: '#8b5cf6', light: '#080810' },
   })
 
-  return new Response(buffer, {
+  return new Response(new Uint8Array(buffer), {
     headers: {
       'Content-Type': 'image/png',
       'Cache-Control': 'public, max-age=86400',
