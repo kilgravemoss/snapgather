@@ -25,7 +25,7 @@ export async function GET(
     type: 'png',
     width: 512,
     margin: 2,
-    color: { dark: '#8b5cf6', light: '#080810' },
+    color: { dark: '#ffffff', light: '#000000' },
   })
 
   return new Response(new Uint8Array(buffer), {
