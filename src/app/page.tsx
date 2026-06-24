@@ -44,17 +44,14 @@ export default function Home() {
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen px-5">
       {/* Background orbs */}
-      <div className="orb" style={{ width: 500, height: 500, background: 'var(--purple)', top: '-10%', right: '-15%', opacity: 0.12 }} />
-      <div className="orb" style={{ width: 400, height: 400, background: 'var(--cyan)', bottom: '-10%', left: '-15%', opacity: 0.10 }} />
+      <div className="orb" style={{ width: 500, height: 500, background: '#fff', top: '-10%', right: '-15%' }} />
+      <div className="orb" style={{ width: 400, height: 400, background: '#fff', bottom: '-10%', left: '-15%' }} />
 
       <div className="relative z-10 w-full max-w-sm flex flex-col items-center gap-8 fade-up">
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
-          <div
-            className="btn-circle"
-            style={{ width: 72, height: 72, background: 'linear-gradient(145deg, rgba(139,92,246,0.5), rgba(6,182,212,0.3))', cursor: 'default', fontSize: 32 }}
-          >
-            📷
+          <div style={{ width: 104, height: 76, cursor: 'default' }}>
+            <img src="/logo.svg" alt="SnapGather" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.5px' }}>SnapGather</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 15 }}>Capture every moment, together</p>
@@ -65,10 +62,10 @@ export default function Home() {
           <button
             onClick={() => router.push(`/${lastEvent.eventCode}`)}
             className="glass w-full fade-up"
-            style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid rgba(139,92,246,0.3)', cursor: 'pointer', background: 'rgba(139,92,246,0.08)', textAlign: 'left' }}
+            style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid rgba(255,255,255,0.18)', cursor: 'pointer', background: 'rgba(255,255,255,0.06)', textAlign: 'left' }}
           >
             <div>
-              <p style={{ fontSize: 11, color: 'var(--purple)', fontWeight: 600, marginBottom: 3 }}>CONTINUE</p>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 3 }}>CONTINUE</p>
               <p style={{ fontSize: 15, fontWeight: 600 }}>{lastEvent.name}</p>
             </div>
             <span style={{ fontSize: 20 }}>→</span>

@@ -1,0 +1,35 @@
+<svg viewBox="0 0 260 190" xmlns="http://www.w3.org/2000/svg">
+  <!-- Black fills so lens overlaps camera body cleanly -->
+  <rect x="12" y="56" width="148" height="120" rx="12" fill="black"/>
+  <rect x="36" y="36" width="50" height="28" rx="8" fill="black"/>
+  <circle cx="188" cy="108" r="72" fill="black"/>
+
+  <!-- Camera body outlines -->
+  <rect x="12" y="56" width="148" height="120" rx="12" fill="none" stroke="white" stroke-width="11"/>
+  <rect x="36" y="36" width="50" height="28" rx="8" fill="none" stroke="white" stroke-width="11"/>
+
+  <!-- Lens outer ring -->
+  <circle cx="188" cy="108" r="72" fill="none" stroke="white" stroke-width="11"/>
+
+  <!--
+    Aperture iris: 6 blades.
+    Each blade: outer arc 120° CW from 300° to 60° (on r=48),
+    tapers via diagonal to inner arc 60° CCW from 30° to 330° (on r=20).
+    Rotated at 60° increments.
+    Black gaps between blades form the visible iris opening.
+  -->
+  <g transform="translate(188,108)">
+    <!-- blade path: M outer300 arc120CW outer60 L inner30 arc60CCW inner330 Z -->
+    <path d="M -41.6,-24 A 48,48 0 0,1 41.6,-24 L 10,-17.3 A 20,20 0 0,0 -10,-17.3 Z" fill="white"/>
+    <path d="M -41.6,-24 A 48,48 0 0,1 41.6,-24 L 10,-17.3 A 20,20 0 0,0 -10,-17.3 Z" fill="white" transform="rotate(60)"/>
+    <path d="M -41.6,-24 A 48,48 0 0,1 41.6,-24 L 10,-17.3 A 20,20 0 0,0 -10,-17.3 Z" fill="white" transform="rotate(120)"/>
+    <path d="M -41.6,-24 A 48,48 0 0,1 41.6,-24 L 10,-17.3 A 20,20 0 0,0 -10,-17.3 Z" fill="white" transform="rotate(180)"/>
+    <path d="M -41.6,-24 A 48,48 0 0,1 41.6,-24 L 10,-17.3 A 20,20 0 0,0 -10,-17.3 Z" fill="white" transform="rotate(240)"/>
+    <path d="M -41.6,-24 A 48,48 0 0,1 41.6,-24 L 10,-17.3 A 20,20 0 0,0 -10,-17.3 Z" fill="white" transform="rotate(300)"/>
+    <!-- Center dot -->
+    <circle r="7" fill="white"/>
+  </g>
+
+  <!-- Housing ring drawn last to frame the blade area -->
+  <circle cx="188" cy="108" r="52" fill="none" stroke="white" stroke-width="7"/>
+</svg>

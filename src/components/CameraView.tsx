@@ -207,7 +207,7 @@ export default function CameraView({ onCapture, photosLeft, videosLeft }: Props)
         {/* Recording timer */}
         {recording && (
           <div style={{ position: 'absolute', top: 14, left: 14, display: 'flex', alignItems: 'center', gap: 7, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(12px)', borderRadius: 99, padding: '5px 13px' }}>
-            <div className="blink" style={{ width: 8, height: 8, borderRadius: '50%', background: '#f87171' }} />
+            <div className="blink" style={{ width: 8, height: 8, borderRadius: '50%', background: '#ffffff' }} />
             <span style={{ fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums', color: '#fff' }}>
               {formatTime(elapsed)} / {formatTime(MAX_SECS)}
             </span>
@@ -216,7 +216,7 @@ export default function CameraView({ onCapture, photosLeft, videosLeft }: Props)
 
         {/* Remaining counter */}
         <div style={{ position: 'absolute', top: 14, right: 14, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(12px)', borderRadius: 99, padding: '5px 13px' }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: remaining <= 1 ? 'var(--danger)' : 'rgba(255,255,255,0.85)' }}>
+          <span style={{ fontSize: 12, fontWeight: remaining <= 1 ? 700 : 500, color: 'rgba(255,255,255,0.85)' }}>
             {limitLabel}
           </span>
         </div>

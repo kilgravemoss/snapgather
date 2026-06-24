@@ -8,17 +8,18 @@
   --surface: rgba(255, 255, 255, 0.05);
   --surface-hover: rgba(255, 255, 255, 0.08);
   --border: rgba(255, 255, 255, 0.09);
-  --border-strong: rgba(255, 255, 255, 0.16);
+  --border-strong: rgba(255, 255, 255, 0.18);
   --text: #ffffff;
   --text-2: rgba(255, 255, 255, 0.65);
   --text-muted: rgba(255, 255, 255, 0.35);
-  --purple: #a78bfa;
-  --purple-dim: rgba(167, 139, 250, 0.15);
-  --purple-glow: rgba(167, 139, 250, 0.3);
-  --cyan: #67e8f9;
-  --danger: #f87171;
-  --danger-glow: rgba(248, 113, 113, 0.25);
-  --success: #34d399;
+  /* All accents are white-only — no colour */
+  --purple: rgba(255, 255, 255, 0.95);
+  --purple-dim: rgba(255, 255, 255, 0.08);
+  --purple-glow: rgba(255, 255, 255, 0.12);
+  --cyan: rgba(255, 255, 255, 0.88);
+  --danger: #ffffff;
+  --danger-glow: rgba(255, 255, 255, 0.1);
+  --success: #ffffff;
   --radius: 20px;
 }
 
@@ -81,19 +82,19 @@ html, body {
 .btn-circle:active { transform: scale(0.91); opacity: 0.8; }
 
 .btn-circle-purple {
-  background: rgba(167, 139, 250, 0.18);
-  border-color: rgba(167, 139, 250, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.28);
   box-shadow:
-    0 4px 24px rgba(167, 139, 250, 0.3),
+    0 4px 24px rgba(255, 255, 255, 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
     inset 0 -1px 0 rgba(0, 0, 0, 0.15);
-  color: var(--purple);
+  color: var(--text);
 }
 
 .btn-circle-danger {
-  background: rgba(248, 113, 113, 0.15);
-  border-color: rgba(248, 113, 113, 0.3);
-  color: var(--danger);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: var(--text);
 }
 
 /* ── Shutter button ── */
@@ -119,17 +120,17 @@ html, body {
   background: #ffffff;
   width: calc(100% - 12px);
   height: calc(100% - 12px);
-  transition: background 0.15s ease, transform 0.1s ease;
+  transition: background 0.15s ease, border-radius 0.15s ease, width 0.15s ease, height 0.15s ease;
 }
 
 .btn-shutter.video-mode {
-  border-color: rgba(248, 113, 113, 0.9);
+  border-color: rgba(255, 255, 255, 0.6);
 }
 
-.btn-shutter.video-mode::after { background: var(--danger); }
+.btn-shutter.video-mode::after { background: #ffffff; }
 
 .btn-shutter.recording::after {
-  background: var(--danger);
+  background: #ffffff;
   border-radius: 6px;
   width: 36%;
   height: 36%;
@@ -137,7 +138,7 @@ html, body {
 
 .btn-shutter:active { transform: scale(0.91); opacity: 0.85; }
 
-.btn-shutter:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn-shutter:disabled { opacity: 0.25; cursor: not-allowed; }
 
 /* ── Pill button ── */
 .btn-pill {
@@ -172,32 +173,36 @@ html, body {
 .btn-pill:active { transform: scale(0.97); opacity: 0.85; }
 
 .btn-pill-purple {
-  background: rgba(167, 139, 250, 0.16);
-  border-color: rgba(167, 139, 250, 0.35);
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.28);
   color: #fff;
-  box-shadow: 0 4px 20px rgba(167, 139, 250, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .btn-pill-purple:hover {
-  background: rgba(167, 139, 250, 0.24);
-  box-shadow: 0 6px 28px rgba(167, 139, 250, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.17);
+  box-shadow: 0 6px 28px rgba(255, 255, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .btn-pill-cyan {
-  background: rgba(103, 232, 249, 0.12);
-  border-color: rgba(103, 232, 249, 0.3);
-  box-shadow: 0 4px 20px rgba(103, 232, 249, 0.2);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
+/* Danger pill: inverted (white bg, black text) for destructive actions */
 .btn-pill-danger {
-  background: rgba(248, 113, 113, 0.15);
-  border-color: rgba(248, 113, 113, 0.32);
-  color: var(--danger);
-  box-shadow: 0 4px 20px rgba(248, 113, 113, 0.18);
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #000000;
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1);
+}
+
+.btn-pill-danger:hover {
+  background: rgba(255, 255, 255, 0.96);
 }
 
 .btn-pill:disabled, .btn-circle:disabled {
-  opacity: 0.3;
+  opacity: 0.28;
   cursor: not-allowed;
   transform: none !important;
 }
@@ -220,20 +225,20 @@ html, body {
 .input-glass::placeholder { color: var(--text-muted); }
 
 .input-glass:focus {
-  border-color: rgba(167, 139, 250, 0.5);
-  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.12);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.07);
 }
 
 textarea.input-glass { resize: none; }
 
-/* ── Orbs ── */
+/* ── Orbs (subtle white depth, no colour) ── */
 .orb {
   position: fixed;
   border-radius: 50%;
   filter: blur(120px);
   pointer-events: none;
   z-index: 0;
-  opacity: 0.06;
+  opacity: 0.04;
 }
 
 /* ── Filter strip chip ── */
@@ -282,9 +287,9 @@ textarea.input-glass { resize: none; }
 .blink { animation: blink 1s ease-in-out infinite; }
 
 @keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 rgba(248,113,113,0.6); }
-  70% { box-shadow: 0 0 0 12px rgba(248,113,113,0); }
-  100% { box-shadow: 0 0 0 0 rgba(248,113,113,0); }
+  0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.55); }
+  70% { box-shadow: 0 0 0 12px rgba(255, 255, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
 }
 .pulse-record { animation: pulse-ring 1.4s ease-out infinite; }
 

@@ -181,7 +181,7 @@ export default function GuestPage() {
 
   return (
     <main className="relative flex flex-col min-h-screen px-4 py-5" style={{ paddingBottom: 32 }}>
-      <div className="orb" style={{ width: 300, height: 300, background: 'var(--purple)', top: '-10%', right: '-20%' }} />
+      <div className="orb" style={{ width: 300, height: 300, background: '#fff', top: '-10%', right: '-20%' }} />
 
       {/* Header */}
       <div className="relative z-10 flex items-center justify-between mb-4">
@@ -242,7 +242,7 @@ export default function GuestPage() {
                 <span style={{ fontVariantNumeric: 'tabular-nums' }}>{progress}%</span>
               </div>
               <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
-                <div style={{ height: '100%', borderRadius: 2, background: 'linear-gradient(90deg, var(--purple), var(--cyan))', width: `${progress}%`, transition: 'width 0.2s ease' }} />
+                <div style={{ height: '100%', borderRadius: 2, background: 'rgba(255,255,255,0.9)', width: `${progress}%`, transition: 'width 0.2s ease' }} />
               </div>
             </div>
           )}
@@ -263,7 +263,7 @@ export default function GuestPage() {
       {/* Success */}
       {phase === 'success' && (
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-4 fade-up text-center">
-          <div className="btn-circle" style={{ width: 72, height: 72, background: 'rgba(52,211,153,0.15)', borderColor: 'rgba(52,211,153,0.3)', cursor: 'default', color: 'var(--success)' }}>
+          <div className="btn-circle" style={{ width: 72, height: 72, background: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.25)', cursor: 'default', color: 'var(--text)' }}>
             <CheckIcon size={32} />
           </div>
           <div>

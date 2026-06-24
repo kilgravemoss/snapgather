@@ -132,7 +132,7 @@ export default function AdminPage() {
   if (phase === 'login') {
     return (
       <main className="relative flex flex-col items-center justify-center min-h-screen px-5">
-        <div className="orb" style={{ width: 400, height: 400, background: 'var(--purple)', top: '-10%', right: '-15%', opacity: 0.12 }} />
+        <div className="orb" style={{ width: 400, height: 400, background: '#fff', top: '-10%', right: '-15%' }} />
         <div className="relative z-10 w-full max-w-sm flex flex-col gap-6 fade-up">
           <div className="flex items-center gap-4">
             <button onClick={() => router.push(`/${code}`)} className="btn-circle" style={{ width: 40, height: 40 }}>
@@ -154,7 +154,7 @@ export default function AdminPage() {
               onChange={(e) => { setPassword(e.target.value); setLoginError('') }}
               autoFocus
             />
-            {loginError && <p style={{ color: '#ef4444', fontSize: 13 }}>{loginError}</p>}
+            {loginError && <p style={{ color: 'var(--text-2)', fontSize: 13 }}>{loginError}</p>}
             <button type="submit" disabled={loginLoading || !password} className="btn-pill btn-pill-purple w-full" style={{ justifyContent: 'center' }}>
               {loginLoading ? 'Signing in…' : 'Sign in'}
             </button>
@@ -166,7 +166,7 @@ export default function AdminPage() {
 
   return (
     <main className="relative flex flex-col min-h-screen">
-      <div className="orb" style={{ width: 400, height: 400, background: 'var(--purple)', top: '-10%', right: '-15%', opacity: 0.1 }} />
+      <div className="orb" style={{ width: 400, height: 400, background: '#fff', top: '-10%', right: '-15%' }} />
 
       {/* Top bar */}
       <div className="relative z-10 glass" style={{ borderRadius: 0, borderLeft: 'none', borderRight: 'none', borderTop: 'none', padding: '16px 20px' }}>
@@ -177,7 +177,7 @@ export default function AdminPage() {
               <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                 {photoCount} photos · {videoCount} videos · {guestCount} guests
               </span>
-              <button onClick={copyGuestLink} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--purple)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+              <button onClick={copyGuestLink} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                 {copied ? <CheckIcon size={12} /> : <CopyIcon size={12} />}
                 {code}
               </button>

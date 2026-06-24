@@ -92,10 +92,10 @@ export default function OwnerPage() {
   if (phase === 'login') {
     return (
       <main className="relative flex flex-col items-center justify-center min-h-screen px-5">
-        <div className="orb" style={{ width: 400, height: 400, background: 'var(--purple)', top: '-10%', right: '-15%', opacity: 0.12 }} />
+        <div className="orb" style={{ width: 400, height: 400, background: '#fff', top: '-10%', right: '-15%', opacity: 0.12 }} />
         <div className="relative z-10 w-full max-w-sm flex flex-col gap-6 fade-up">
           <div className="flex flex-col items-center gap-3 text-center">
-            <div className="btn-circle" style={{ width: 64, height: 64, fontSize: 28, cursor: 'default', background: 'linear-gradient(145deg, rgba(139,92,246,0.5), rgba(6,182,212,0.3))' }}>
+            <div className="btn-circle" style={{ width: 64, height: 64, fontSize: 28, cursor: 'default' }}>
               🔑
             </div>
             <h1 style={{ fontSize: 22, fontWeight: 700 }}>Owner Dashboard</h1>
@@ -111,7 +111,7 @@ export default function OwnerPage() {
               onChange={(e) => { setSecret(e.target.value); setLoginError('') }}
               autoFocus
             />
-            {loginError && <p style={{ color: '#ef4444', fontSize: 13, textAlign: 'center' }}>{loginError}</p>}
+            {loginError && <p style={{ color: 'var(--text-2)', fontSize: 13, textAlign: 'center' }}>{loginError}</p>}
             <button type="submit" disabled={loginLoading || !secret} className="btn-pill btn-pill-purple w-full" style={{ justifyContent: 'center' }}>
               {loginLoading ? 'Signing in…' : 'Sign in'}
             </button>
@@ -127,7 +127,7 @@ export default function OwnerPage() {
 
   return (
     <main className="relative flex flex-col min-h-screen">
-      <div className="orb" style={{ width: 500, height: 500, background: 'var(--purple)', top: '-15%', right: '-20%', opacity: 0.08 }} />
+      <div className="orb" style={{ width: 500, height: 500, background: '#fff', top: '-15%', right: '-20%', opacity: 0.08 }} />
 
       {/* Header */}
       <div className="relative z-10 glass" style={{ borderRadius: 0, borderLeft: 'none', borderRight: 'none', borderTop: 'none', padding: '18px 20px' }}>
@@ -168,7 +168,7 @@ export default function OwnerPage() {
                     <h2 style={{ fontSize: 16, fontWeight: 700 }}>{ev.name}</h2>
                     <span style={{
                       fontSize: 11, fontWeight: 700, letterSpacing: '0.08em',
-                      background: 'rgba(139,92,246,0.2)', color: 'var(--purple)',
+                      background: 'rgba(255,255,255,0.1)', color: 'var(--text-2)',
                       borderRadius: 6, padding: '2px 8px'
                     }}>
                       {ev.eventCode}
@@ -190,7 +190,7 @@ export default function OwnerPage() {
                     </div>
                     <div>
                       <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>TOTAL SIZE</p>
-                      <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--cyan)' }}>{formatBytes(ev.totalSize)}</p>
+                      <p style={{ fontSize: 18, fontWeight: 700 }}>{formatBytes(ev.totalSize)}</p>
                     </div>
                     <div>
                       <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>CREATED</p>

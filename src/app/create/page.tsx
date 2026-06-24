@@ -48,7 +48,7 @@ export default function CreateEvent() {
   if (created) {
     return (
       <main className="relative flex flex-col items-center justify-center min-h-screen px-5">
-        <div className="orb" style={{ width: 500, height: 500, background: 'var(--purple)', top: '-10%', right: '-15%', opacity: 0.12 }} />
+        <div className="orb" style={{ width: 500, height: 500, background: '#fff', top: '-10%', right: '-15%', opacity: 0.12 }} />
         <div className="relative z-10 w-full max-w-sm flex flex-col items-center gap-6 fade-up text-center">
           <div style={{ fontSize: 56 }}>🎉</div>
           <div>
@@ -59,7 +59,7 @@ export default function CreateEvent() {
           <div className="glass w-full p-6 flex flex-col gap-5">
             <div>
               <p style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 8 }}>EVENT CODE</p>
-              <div style={{ fontSize: 40, fontWeight: 800, letterSpacing: '0.15em', color: 'var(--purple)' }}>
+              <div style={{ fontSize: 40, fontWeight: 800, letterSpacing: '0.15em', color: 'var(--text)' }}>
                 {created.eventCode}
               </div>
             </div>
@@ -94,7 +94,7 @@ export default function CreateEvent() {
 
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen px-5 py-10">
-      <div className="orb" style={{ width: 400, height: 400, background: 'var(--purple)', top: '-10%', left: '-10%', opacity: 0.1 }} />
+      <div className="orb" style={{ width: 400, height: 400, background: '#fff', top: '-10%', left: '-10%', opacity: 0.1 }} />
 
       <div className="relative z-10 w-full max-w-sm flex flex-col gap-6 fade-up">
         <div className="flex items-center gap-4">
@@ -154,7 +154,7 @@ export default function CreateEvent() {
           </div>
 
           {error && (
-            <p style={{ color: '#ef4444', fontSize: 13, textAlign: 'center' }}>{error}</p>
+            <p style={{ color: 'var(--text-2)', fontSize: 13, textAlign: 'center' }}>{error}</p>
           )}
 
           <button
