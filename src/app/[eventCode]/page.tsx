@@ -6,6 +6,10 @@ import CameraView, { CaptureResult } from '@/components/CameraView'
 import { ArrowLeftIcon, CheckIcon, GalleryIcon, SpinnerIcon } from '@/components/Icons'
 import { formatBytes, formatDate } from '@/lib/utils'
 
+const MAX_PHOTOS = 10
+const MAX_VIDEOS = 3
+const FIVE_HOURS = 5 * 60 * 60 * 1000
+
 type Phase = 'loading' | 'camera' | 'preview' | 'uploading' | 'success' | 'gallery'
 
 interface Upload {
@@ -41,8 +45,6 @@ function getOrCreateSessionId(): string {
   return id
 }
 
-const FIVE_HOURS = 5 * 60 * 60 * 1000
-
 function saveLastEvent(eventCode: string, name: string) {
   localStorage.setItem('sg_last_event', JSON.stringify({ eventCode, name, ts: Date.now() }))
 }
@@ -51,27 +53,36 @@ export default function GuestPage() {
   const { eventCode } = useParams<{ eventCode: string }>()
   const code = eventCode.toUpperCase()
 
-  const [event, setEvent] = useState<Event | null>(null)
-  const [notFound, setNotFound] = useState(false)
-  const [phase, setPhase] = useState<Phase>('loading')
-  const [capture, setCapture] = useState<CaptureResult | null>(null)
-  const [note, setNote] = useState('')
-  const [progress, setProgress] = useState(0)
+  const [event,       setEvent]       = useState<Event | null>(null)
+  const [notFound,    setNotFound]    = useState(false)
+  const [phase,       setPhase]       = useState<Phase>('loading')
+  const [capture,     setCapture]     = useState<CaptureResult | null>(null)
+  const [note,        setNote]        = useState('')
+  const [progress,    setProgress]    = useState(0)
   const [uploadError, setUploadError] = useState('')
-  const [myUploads, setMyUploads] = useState<Upload[]>([])
+  const [myUploads,   setMyUploads]   = useState<Upload[]>([])
   const [galleryLoading, setGalleryLoading] = useState(false)
-  const [lightbox, setLightbox] = useState<Upload | null>(null)
+  const [lightbox,    setLightbox]    = useState<Upload | null>(null)
+  const [photosUsed,  setPhotosUsed]  = useState(0)
+  const [videosUsed,  setVideosUsed]  = useState(0)
   const sessionRef = useRef<string>('')
 
   useEffect(() => {
     sessionRef.current = getOrCreateSessionId()
     fetch(`/api/events/${code}`)
       .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
+      .then(async (data) => {
         if (!data) { setNotFound(true); return }
         setEvent(data)
         saveLastEvent(data.eventCode, data.name)
         setPhase('camera')
+        // Load usage counts
+        const res = await fetch(`/api/events/${code}/uploads?sessionId=${sessionRef.current}`)
+        if (res.ok) {
+          const { uploads } = await res.json()
+          setPhotosUsed(uploads.filter((u: Upload) => u.fileType === 'photo').length)
+          setVideosUsed(uploads.filter((u: Upload) => u.fileType === 'video').length)
+        }
       })
   }, [code])
 
@@ -89,7 +100,6 @@ export default function GuestPage() {
     setPhase('uploading')
 
     try {
-      // 1. Get presigned URL
       const presignRes = await fetch(`/api/events/${code}/presign`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -106,10 +116,8 @@ export default function GuestPage() {
       }
       const { uploadUrl, key } = await presignRes.json()
 
-      // 2. Upload directly to R2
       await uploadToR2(uploadUrl, capture.blob, setProgress)
 
-      // 3. Confirm with server
       const confirmRes = await fetch(`/api/events/${code}/uploads`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -125,9 +133,13 @@ export default function GuestPage() {
       })
       if (!confirmRes.ok) throw new Error('Failed to confirm upload')
 
+      // Update local counts
+      if (capture.type === 'photo') setPhotosUsed((p) => p + 1)
+      else setVideosUsed((v) => v + 1)
+
       URL.revokeObjectURL(capture.url)
       setPhase('success')
-      setTimeout(() => { setCapture(null); setPhase('camera') }, 2500)
+      setTimeout(() => { setCapture(null); setPhase('camera') }, 2200)
     } catch (e: any) {
       setUploadError(e.message || 'Upload failed. Please try again.')
       setPhase('preview')
@@ -145,12 +157,15 @@ export default function GuestPage() {
     setGalleryLoading(false)
   }
 
+  const photosLeft = Math.max(0, MAX_PHOTOS - photosUsed)
+  const videosLeft = Math.max(0, MAX_VIDEOS - videosUsed)
+
   if (notFound) {
     return (
       <main className="flex flex-col items-center justify-center min-h-screen px-5 text-center gap-5">
-        <div style={{ fontSize: 48 }}>🔍</div>
+        <div style={{ fontSize: 44 }}>🔍</div>
         <h2 style={{ fontSize: 22, fontWeight: 700 }}>Event not found</h2>
-        <p style={{ color: 'var(--text-muted)' }}>Check the event code and try again.</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Check the event code and try again.</p>
         <a href="/" className="btn-pill btn-pill-purple">Go home</a>
       </main>
     )
@@ -159,29 +174,29 @@ export default function GuestPage() {
   if (phase === 'loading') {
     return (
       <main className="flex items-center justify-center min-h-screen">
-        <SpinnerIcon size={32} />
+        <div className="spin" style={{ width: 28, height: 28, border: '2.5px solid rgba(255,255,255,0.1)', borderTopColor: '#fff', borderRadius: '50%' }} />
       </main>
     )
   }
 
   return (
-    <main className="relative flex flex-col min-h-screen px-4 py-5">
-      <div className="orb" style={{ width: 350, height: 350, background: 'var(--purple)', top: '-15%', right: '-20%', opacity: 0.1 }} />
+    <main className="relative flex flex-col min-h-screen px-4 py-5" style={{ paddingBottom: 32 }}>
+      <div className="orb" style={{ width: 300, height: 300, background: 'var(--purple)', top: '-10%', right: '-20%' }} />
 
       {/* Header */}
-      <div className="relative z-10 flex items-center justify-between mb-5">
+      <div className="relative z-10 flex items-center justify-between mb-4">
         <div>
-          <h1 style={{ fontSize: 18, fontWeight: 700 }}>{event?.name}</h1>
-          {event?.description && <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 2 }}>{event.description}</p>}
+          <h1 style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-0.3px' }}>{event?.name}</h1>
+          {event?.description && <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 2 }}>{event.description}</p>}
         </div>
         {phase !== 'gallery' && (
-          <button onClick={loadMyPhotos} className="btn-circle" style={{ width: 42, height: 42 }} title="My photos">
-            <GalleryIcon size={18} />
+          <button onClick={loadMyPhotos} className="btn-circle" style={{ width: 40, height: 40 }} title="My photos">
+            <GalleryIcon size={17} />
           </button>
         )}
         {phase === 'gallery' && (
-          <button onClick={() => setPhase('camera')} className="btn-circle" style={{ width: 42, height: 42 }}>
-            <ArrowLeftIcon size={18} />
+          <button onClick={() => setPhase('camera')} className="btn-circle" style={{ width: 40, height: 40 }}>
+            <ArrowLeftIcon size={17} />
           </button>
         )}
       </div>
@@ -189,16 +204,17 @@ export default function GuestPage() {
       {/* Camera */}
       {phase === 'camera' && (
         <div className="relative z-10 flex-1">
-          <CameraView onCapture={handleCapture} />
-          <p style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center', marginTop: 16 }}>
-            Tap the camera button to take a photo · Hold for video
-          </p>
+          <CameraView
+            onCapture={handleCapture}
+            photosLeft={photosLeft}
+            videosLeft={videosLeft}
+          />
         </div>
       )}
 
       {/* Preview */}
       {(phase === 'preview' || phase === 'uploading') && capture && (
-        <div className="relative z-10 flex-1 flex flex-col gap-4 fade-up">
+        <div className="relative z-10 flex-1 flex flex-col gap-3 fade-up">
           <div style={{ borderRadius: 24, overflow: 'hidden', aspectRatio: '3/4', background: '#000' }}>
             {capture.type === 'photo' ? (
               <img src={capture.url} alt="Preview" className="w-full h-full" style={{ objectFit: 'cover' }} />
@@ -209,32 +225,30 @@ export default function GuestPage() {
 
           <textarea
             className="input-glass"
-            placeholder="Add a note... (optional)"
+            placeholder="Add a note… (optional)"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            rows={3}
+            rows={2}
             maxLength={300}
             disabled={phase === 'uploading'}
           />
 
-          {uploadError && <p style={{ color: '#ef4444', fontSize: 13, textAlign: 'center' }}>{uploadError}</p>}
+          {uploadError && <p style={{ color: 'var(--danger)', fontSize: 13, textAlign: 'center' }}>{uploadError}</p>}
 
           {phase === 'uploading' && (
-            <div className="glass p-4 flex flex-col gap-3">
-              <div className="flex justify-between" style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                <span>Uploading {capture.type}…</span>
-                <span>{progress}%</span>
+            <div className="glass" style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-2)' }}>
+                <span>Uploading…</span>
+                <span style={{ fontVariantNumeric: 'tabular-nums' }}>{progress}%</span>
               </div>
-              <div style={{ height: 6, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
-                <div
-                  style={{ height: '100%', borderRadius: 3, background: 'linear-gradient(90deg, var(--purple), var(--cyan))', width: `${progress}%`, transition: 'width 0.2s ease' }}
-                />
+              <div style={{ height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{ height: '100%', borderRadius: 2, background: 'linear-gradient(90deg, var(--purple), var(--cyan))', width: `${progress}%`, transition: 'width 0.2s ease' }} />
               </div>
             </div>
           )}
 
           {phase === 'preview' && (
-            <div className="flex gap-3">
+            <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => { URL.revokeObjectURL(capture.url); setCapture(null); setPhase('camera') }} className="btn-pill" style={{ flex: 1, justifyContent: 'center' }}>
                 Retake
               </button>
@@ -248,13 +262,15 @@ export default function GuestPage() {
 
       {/* Success */}
       {phase === 'success' && (
-        <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-5 fade-up text-center">
-          <div className="btn-circle" style={{ width: 80, height: 80, background: 'rgba(16,185,129,0.25)', borderColor: 'rgba(16,185,129,0.4)', cursor: 'default', color: 'var(--success)' }}>
-            <CheckIcon size={36} />
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-4 fade-up text-center">
+          <div className="btn-circle" style={{ width: 72, height: 72, background: 'rgba(52,211,153,0.15)', borderColor: 'rgba(52,211,153,0.3)', cursor: 'default', color: 'var(--success)' }}>
+            <CheckIcon size={32} />
           </div>
           <div>
-            <h2 style={{ fontSize: 22, fontWeight: 700 }}>Uploaded!</h2>
-            <p style={{ color: 'var(--text-muted)', marginTop: 4 }}>Returning to camera…</p>
+            <p style={{ fontSize: 20, fontWeight: 700 }}>Uploaded</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>
+              {photosLeft} photo{photosLeft !== 1 ? 's' : ''} · {videosLeft} video{videosLeft !== 1 ? 's' : ''} remaining
+            </p>
           </div>
         </div>
       )}
@@ -262,36 +278,34 @@ export default function GuestPage() {
       {/* My Gallery */}
       {phase === 'gallery' && (
         <div className="relative z-10 flex-1 fade-up">
-          <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 16 }}>My photos & videos</h2>
+          <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 14, letterSpacing: '-0.2px' }}>My uploads</p>
           {galleryLoading ? (
-            <div className="flex justify-center py-16"><SpinnerIcon size={28} /></div>
+            <div className="flex justify-center py-16">
+              <div className="spin" style={{ width: 24, height: 24, border: '2px solid rgba(255,255,255,0.1)', borderTopColor: '#fff', borderRadius: '50%' }} />
+            </div>
           ) : myUploads.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-              <div style={{ fontSize: 40 }}>📷</div>
-              <p style={{ color: 'var(--text-muted)' }}>No photos yet — take your first shot!</p>
+              <div style={{ fontSize: 38 }}>📷</div>
+              <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>No uploads yet</p>
               <button onClick={() => setPhase('camera')} className="btn-pill btn-pill-purple">Open camera</button>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               {myUploads.map((u) => (
-                <button
-                  key={u.id}
-                  onClick={() => setLightbox(u)}
-                  className="glass"
-                  style={{ padding: 0, overflow: 'hidden', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                >
-                  <div style={{ aspectRatio: '1', background: '#000', position: 'relative' }}>
+                <button key={u.id} onClick={() => setLightbox(u)} className="glass"
+                  style={{ padding: 0, overflow: 'hidden', border: 'none', cursor: 'pointer', textAlign: 'left', borderRadius: 16 }}>
+                  <div style={{ aspectRatio: '1', background: '#111', position: 'relative' }}>
                     {u.fileType === 'photo' ? (
                       <img src={u.url} alt="" className="w-full h-full" style={{ objectFit: 'cover' }} />
                     ) : (
                       <>
                         <video src={u.url} muted preload="metadata" className="w-full h-full" style={{ objectFit: 'cover' }} />
-                        <div style={{ position: 'absolute', top: 6, left: 6, background: 'rgba(0,0,0,0.5)', borderRadius: 6, padding: '2px 7px', fontSize: 11, color: '#fff' }}>🎥</div>
+                        <div style={{ position: 'absolute', top: 6, left: 6, background: 'rgba(0,0,0,0.6)', borderRadius: 6, padding: '2px 7px', fontSize: 10, color: '#fff', fontWeight: 600 }}>VIDEO</div>
                       </>
                     )}
                   </div>
                   {u.note && (
-                    <div style={{ padding: '8px 10px', fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                    <div style={{ padding: '7px 9px', fontSize: 12, color: 'var(--text-2)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
                       {u.note}
                     </div>
                   )}
@@ -304,21 +318,19 @@ export default function GuestPage() {
 
       {/* Lightbox */}
       {lightbox && (
-        <div
-          onClick={() => setLightbox(null)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 20, gap: 16 }}
-        >
+        <div onClick={() => setLightbox(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 20, gap: 14 }}>
           {lightbox.fileType === 'photo' ? (
-            <img src={lightbox.url} alt="" style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: 16, objectFit: 'contain' }} onClick={(e) => e.stopPropagation()} />
+            <img src={lightbox.url} alt="" style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: 14, objectFit: 'contain' }} onClick={(e) => e.stopPropagation()} />
           ) : (
-            <video src={lightbox.url} controls style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: 16 }} onClick={(e) => e.stopPropagation()} />
+            <video src={lightbox.url} controls style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: 14 }} onClick={(e) => e.stopPropagation()} />
           )}
           {lightbox.note && (
-            <div className="glass" style={{ padding: '12px 18px', maxWidth: '100%', borderRadius: 16 }} onClick={(e) => e.stopPropagation()}>
-              <p style={{ fontSize: 14, lineHeight: 1.5 }}>{lightbox.note}</p>
+            <div className="glass" style={{ padding: '10px 16px', maxWidth: '100%', borderRadius: 14 }} onClick={(e) => e.stopPropagation()}>
+              <p style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--text-2)' }}>{lightbox.note}</p>
             </div>
           )}
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{formatDate(lightbox.createdAt)} · {formatBytes(lightbox.fileSize)}</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: 11 }}>{formatDate(lightbox.createdAt)} · {formatBytes(lightbox.fileSize)}</p>
         </div>
       )}
     </main>

@@ -3,21 +3,23 @@
 @tailwind utilities;
 
 :root {
-  --bg: #080810;
-  --bg2: #0e0e1a;
-  --surface: rgba(255, 255, 255, 0.04);
-  --surface-hover: rgba(255, 255, 255, 0.07);
-  --border: rgba(255, 255, 255, 0.08);
+  --bg: #000000;
+  --bg2: #0c0c0c;
+  --surface: rgba(255, 255, 255, 0.05);
+  --surface-hover: rgba(255, 255, 255, 0.08);
+  --border: rgba(255, 255, 255, 0.09);
   --border-strong: rgba(255, 255, 255, 0.16);
-  --text: #f0f0ff;
-  --text-muted: rgba(240, 240, 255, 0.45);
-  --purple: #8b5cf6;
-  --purple-glow: rgba(139, 92, 246, 0.35);
-  --cyan: #06b6d4;
-  --cyan-glow: rgba(6, 182, 212, 0.35);
-  --danger: #ef4444;
-  --danger-glow: rgba(239, 68, 68, 0.3);
-  --success: #10b981;
+  --text: #ffffff;
+  --text-2: rgba(255, 255, 255, 0.65);
+  --text-muted: rgba(255, 255, 255, 0.35);
+  --purple: #a78bfa;
+  --purple-dim: rgba(167, 139, 250, 0.15);
+  --purple-glow: rgba(167, 139, 250, 0.3);
+  --cyan: #67e8f9;
+  --danger: #f87171;
+  --danger-glow: rgba(248, 113, 113, 0.25);
+  --success: #34d399;
+  --radius: 20px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,19 +27,28 @@
 html, body {
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
 }
 
-/* ── Glass card ── */
+/* ── Glass surface ── */
 .glass {
-  background: var(--surface);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(32px) saturate(160%);
+  -webkit-backdrop-filter: blur(32px) saturate(160%);
   border: 1px solid var(--border);
-  border-radius: 24px;
+  border-radius: var(--radius);
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
 }
 
 /* ── Liquid glass circle button ── */
@@ -46,16 +57,16 @@ html, body {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: linear-gradient(145deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.06) 100%);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+    0 2px 12px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition: transform 0.12s ease, opacity 0.12s ease, background 0.12s ease;
   color: var(--text);
   user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -63,42 +74,70 @@ html, body {
 }
 
 .btn-circle:hover {
-  background: linear-gradient(145deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.1) 100%);
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.11);
   transform: translateY(-1px);
 }
 
-.btn-circle:active { transform: scale(0.93); }
+.btn-circle:active { transform: scale(0.91); opacity: 0.8; }
 
 .btn-circle-purple {
-  background: linear-gradient(145deg, rgba(139,92,246,0.45) 0%, rgba(109,40,217,0.3) 100%);
-  border-color: rgba(139, 92, 246, 0.5);
+  background: rgba(167, 139, 250, 0.18);
+  border-color: rgba(167, 139, 250, 0.35);
   box-shadow:
-    0 8px 40px rgba(139, 92, 246, 0.45),
-    0 0 0 3px rgba(139, 92, 246, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 4px 24px rgba(167, 139, 250, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
     inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+  color: var(--purple);
 }
 
-.btn-circle-purple:hover {
-  background: linear-gradient(145deg, rgba(139,92,246,0.6) 0%, rgba(109,40,217,0.45) 100%);
-  box-shadow:
-    0 12px 56px rgba(139, 92, 246, 0.6),
-    0 0 0 4px rgba(139, 92, 246, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+.btn-circle-danger {
+  background: rgba(248, 113, 113, 0.15);
+  border-color: rgba(248, 113, 113, 0.3);
+  color: var(--danger);
 }
 
-.btn-circle-record {
-  background: linear-gradient(145deg, rgba(239,68,68,0.5) 0%, rgba(185,28,28,0.35) 100%);
-  border-color: rgba(239, 68, 68, 0.55);
-  box-shadow:
-    0 8px 40px rgba(239, 68, 68, 0.45),
-    0 0 0 3px rgba(239, 68, 68, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+/* ── Shutter button ── */
+.btn-shutter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  flex-shrink: 0;
+  position: relative;
 }
+
+.btn-shutter::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: #ffffff;
+  width: calc(100% - 12px);
+  height: calc(100% - 12px);
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.btn-shutter.video-mode {
+  border-color: rgba(248, 113, 113, 0.9);
+}
+
+.btn-shutter.video-mode::after { background: var(--danger); }
+
+.btn-shutter.recording::after {
+  background: var(--danger);
+  border-radius: 6px;
+  width: 36%;
+  height: 36%;
+}
+
+.btn-shutter:active { transform: scale(0.91); opacity: 0.85; }
+
+.btn-shutter:disabled { opacity: 0.3; cursor: not-allowed; }
 
 /* ── Pill button ── */
 .btn-pill {
@@ -106,18 +145,15 @@ html, body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 13px 28px;
+  padding: 13px 26px;
   border-radius: 9999px;
-  background: linear-gradient(145deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%);
+  background: rgba(255, 255, 255, 0.07);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.12s ease;
   color: var(--text);
   font-size: 15px;
   font-weight: 500;
@@ -125,99 +161,136 @@ html, body {
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   white-space: nowrap;
+  letter-spacing: -0.1px;
 }
 
 .btn-pill:hover {
-  background: linear-gradient(145deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.09) 100%);
+  background: rgba(255, 255, 255, 0.11);
   transform: translateY(-1px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255,255,255,0.25);
 }
 
-.btn-pill:active { transform: scale(0.97); }
+.btn-pill:active { transform: scale(0.97); opacity: 0.85; }
 
 .btn-pill-purple {
-  background: linear-gradient(145deg, rgba(139,92,246,0.4) 0%, rgba(109,40,217,0.25) 100%);
-  border-color: rgba(139, 92, 246, 0.45);
-  box-shadow: 0 4px 24px rgba(139, 92, 246, 0.4), inset 0 1px 0 rgba(255,255,255,0.18);
+  background: rgba(167, 139, 250, 0.16);
+  border-color: rgba(167, 139, 250, 0.35);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(167, 139, 250, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .btn-pill-purple:hover {
-  background: linear-gradient(145deg, rgba(139,92,246,0.55) 0%, rgba(109,40,217,0.4) 100%);
-  box-shadow: 0 8px 36px rgba(139, 92, 246, 0.55), inset 0 1px 0 rgba(255,255,255,0.22);
+  background: rgba(167, 139, 250, 0.24);
+  box-shadow: 0 6px 28px rgba(167, 139, 250, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .btn-pill-cyan {
-  background: linear-gradient(145deg, rgba(6,182,212,0.35) 0%, rgba(8,145,178,0.2) 100%);
-  border-color: rgba(6, 182, 212, 0.45);
-  box-shadow: 0 4px 24px rgba(6, 182, 212, 0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+  background: rgba(103, 232, 249, 0.12);
+  border-color: rgba(103, 232, 249, 0.3);
+  box-shadow: 0 4px 20px rgba(103, 232, 249, 0.2);
 }
 
 .btn-pill-danger {
-  background: linear-gradient(145deg, rgba(239,68,68,0.35) 0%, rgba(185,28,28,0.2) 100%);
-  border-color: rgba(239, 68, 68, 0.45);
-  box-shadow: 0 4px 24px rgba(239, 68, 68, 0.3), inset 0 1px 0 rgba(255,255,255,0.12);
+  background: rgba(248, 113, 113, 0.15);
+  border-color: rgba(248, 113, 113, 0.32);
+  color: var(--danger);
+  box-shadow: 0 4px 20px rgba(248, 113, 113, 0.18);
 }
 
 .btn-pill:disabled, .btn-circle:disabled {
-  opacity: 0.45;
+  opacity: 0.3;
   cursor: not-allowed;
   transform: none !important;
 }
 
-/* ── Glass input ── */
+/* ── Input ── */
 .input-glass {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
   border-radius: 16px;
   color: var(--text);
-  padding: 14px 18px;
+  padding: 15px 18px;
   font-size: 15px;
   width: 100%;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.15s, box-shadow 0.15s;
   font-family: inherit;
+  letter-spacing: -0.1px;
 }
 
 .input-glass::placeholder { color: var(--text-muted); }
 
 .input-glass:focus {
-  border-color: var(--purple);
-  box-shadow: 0 0 0 3px var(--purple-glow);
+  border-color: rgba(167, 139, 250, 0.5);
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.12);
 }
 
 textarea.input-glass { resize: none; }
 
-/* ── Background orbs ── */
+/* ── Orbs ── */
 .orb {
   position: fixed;
   border-radius: 50%;
-  filter: blur(100px);
+  filter: blur(120px);
   pointer-events: none;
   z-index: 0;
+  opacity: 0.06;
 }
+
+/* ── Filter strip chip ── */
+.filter-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px 8px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+
+.filter-chip.active {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.filter-chip span {
+  font-size: 11px;
+  color: var(--text-2);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.filter-chip.active span { color: #fff; }
 
 /* ── Animations ── */
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.fade-up { animation: fadeUp 0.35s ease forwards; }
+.fade-up { animation: fadeUp 0.3s ease forwards; }
 
 @keyframes spin { to { transform: rotate(360deg); } }
-.spin { animation: spin 0.9s linear infinite; }
+.spin { animation: spin 0.85s linear infinite; }
 
-@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.2; } }
 .blink { animation: blink 1s ease-in-out infinite; }
 
-@keyframes pulse-glow {
-  0%,100% { box-shadow: 0 8px 40px rgba(139,92,246,0.45), 0 0 0 3px rgba(139,92,246,0.15), inset 0 1px 0 rgba(255,255,255,0.22); }
-  50%      { box-shadow: 0 8px 60px rgba(139,92,246,0.7), 0 0 0 6px rgba(139,92,246,0.25), inset 0 1px 0 rgba(255,255,255,0.22); }
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(248,113,113,0.6); }
+  70% { box-shadow: 0 0 0 12px rgba(248,113,113,0); }
+  100% { box-shadow: 0 0 0 0 rgba(248,113,113,0); }
 }
-.pulse-glow { animation: pulse-glow 1.8s ease-in-out infinite; }
+.pulse-record { animation: pulse-ring 1.4s ease-out infinite; }
 
 /* ── Scrollbar ── */
-::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
 
 video, img { display: block; }

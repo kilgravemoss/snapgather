@@ -9,6 +9,8 @@ export const dynamic = 'force-dynamic'
 
 const MAX_PHOTO = 20 * 1024 * 1024
 const MAX_VIDEO = 75 * 1024 * 1024
+const MAX_PHOTOS_PER_SESSION = 10
+const MAX_VIDEOS_PER_SESSION = 3
 const ALLOWED_IMAGE = new Set(['image/jpeg', 'image/png', 'image/heic', 'image/heif', 'image/webp'])
 const ALLOWED_VIDEO = new Set(['video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v', 'video/3gpp', 'video/3gpp2'])
 
@@ -43,6 +45,20 @@ export async function POST(
       select: { id: true },
     })
     if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 })
+
+    // Enforce per-session limits
+    const existingUploads = await prisma.upload.findMany({
+      where: { eventId: event.id, sessionId },
+      select: { fileType: true },
+    })
+    const sessionPhotos = existingUploads.filter((u) => u.fileType === 'photo').length
+    const sessionVideos = existingUploads.filter((u) => u.fileType === 'video').length
+    if (isImage && sessionPhotos >= MAX_PHOTOS_PER_SESSION) {
+      return NextResponse.json({ error: `Photo limit reached (max ${MAX_PHOTOS_PER_SESSION})` }, { status: 429 })
+    }
+    if (isVideo && sessionVideos >= MAX_VIDEOS_PER_SESSION) {
+      return NextResponse.json({ error: `Video limit reached (max ${MAX_VIDEOS_PER_SESSION})` }, { status: 429 })
+    }
 
     const ext = fileName.split('.').pop()?.toLowerCase() || 'bin'
     const key = `events/${event.id}/${uuid()}.${ext}`
