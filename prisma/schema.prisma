@@ -12,8 +12,9 @@ model Event {
   name         String
   eventCode    String   @unique
   description  String?
-  passwordHash String
-  createdAt    DateTime @default(now())
+  passwordHash      String
+  guestPasswordHash String?
+  createdAt         DateTime @default(now())
   uploads      Upload[]
 }
 

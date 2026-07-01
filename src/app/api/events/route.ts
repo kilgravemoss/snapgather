@@ -8,12 +8,14 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, description, password } = await req.json()
+    const { name, description, password, guestPassword } = await req.json()
 
     if (!name?.trim()) return NextResponse.json({ error: 'Event name is required' }, { status: 400 })
     if (!password || password.length < 6) return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
+    if (guestPassword && guestPassword.length < 4) return NextResponse.json({ error: 'Guest password must be at least 4 characters' }, { status: 400 })
 
     const passwordHash = await hash(password, 12)
+    const guestPasswordHash = guestPassword ? await hash(guestPassword, 10) : null
 
     let event = null
     for (let i = 0; i < 5; i++) {
@@ -25,6 +27,7 @@ export async function POST(req: NextRequest) {
             description: description?.trim() || null,
             eventCode,
             passwordHash,
+            guestPasswordHash,
           },
         })
         break

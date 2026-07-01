@@ -3,7 +3,7 @@ import { GetObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { prisma } from '@/lib/db'
 import { r2, BUCKET } from '@/lib/r2'
-import { getAdminSession } from '@/lib/auth'
+import { getAdminSession, getGuestSession } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,9 +63,14 @@ export async function POST(
 
     const event = await prisma.event.findUnique({
       where: { eventCode: eventCode.toUpperCase() },
-      select: { id: true },
+      select: { id: true, guestPasswordHash: true },
     })
     if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 })
+
+    if (event.guestPasswordHash) {
+      const session = await getGuestSession(event.id)
+      if (!session) return NextResponse.json({ error: 'Guest authentication required' }, { status: 401 })
+    }
 
     if (!key.startsWith(`events/${event.id}/`)) {
       return NextResponse.json({ error: 'Invalid storage key' }, { status: 400 })

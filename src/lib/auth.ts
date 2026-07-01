@@ -58,6 +58,32 @@ export function setAdminCookie(
   })
 }
 
+export async function createGuestToken(eventId: string) {
+  return new SignJWT({ eventId, role: 'guest' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setExpirationTime('24h')
+    .sign(secret)
+}
+
+export async function getGuestSession(eventId: string) {
+  const store = await cookies()
+  const token = store.get(`guest_${eventId}`)?.value
+  if (!token) return null
+  const payload = await verifyToken(token)
+  if (!payload || payload.eventId !== eventId || payload.role !== 'guest') return null
+  return payload
+}
+
+export function setGuestCookie(res: { cookies: { set: Function } }, eventId: string, token: string) {
+  res.cookies.set(`guest_${eventId}`, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24,
+    path: '/',
+  })
+}
+
 export function setOwnerCookie(res: { cookies: { set: Function } }, token: string) {
   res.cookies.set('owner_session', token, {
     httpOnly: true,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState, useEffect, useCallback } from 'react'
-import { FlipCameraIcon, CameraIcon, VideoIcon } from './Icons'
+import { FlipCameraIcon, CameraIcon, VideoIcon, FlashIcon } from './Icons'
 import { formatTime } from '@/lib/utils'
 
 export type CaptureResult = {
@@ -50,31 +50,74 @@ interface Props {
 }
 
 export default function CameraView({ onCapture, photosLeft, videosLeft }: Props) {
-  const videoRef   = useRef<HTMLVideoElement>(null)
-  const canvasRef  = useRef<HTMLCanvasElement>(null)
+  const videoRef    = useRef<HTMLVideoElement>(null)
+  const canvasRef   = useRef<HTMLCanvasElement>(null)
   const recorderRef = useRef<MediaRecorder | null>(null)
-  const streamRef  = useRef<MediaStream | null>(null)
-  const chunksRef  = useRef<Blob[]>([])
+  const streamRef   = useRef<MediaStream | null>(null)
+  const chunksRef   = useRef<Blob[]>([])
 
-  const [mode,      setMode]      = useState<Mode>('photo')
-  const [facing,    setFacing]    = useState<Facing>('environment')
-  const [recording, setRecording] = useState(false)
-  const [elapsed,   setElapsed]   = useState(0)
-  const [ready,     setReady]     = useState(false)
-  const [error,     setError]     = useState<string | null>(null)
-  const [filter,    setFilter]    = useState<Filter>(FILTERS[0])
+  // zoom / torch refs (used inside callbacks without re-creating them)
+  const zoomRef            = useRef(1)
+  const hasHardwareZoomRef = useRef(false)
+  const maxZoomRef         = useRef(5)
+  const flashEnabledRef    = useRef(false)
+  const hasTorchRef        = useRef(false)
+
+  const [mode,         setMode]         = useState<Mode>('photo')
+  const [facing,       setFacing]       = useState<Facing>('environment')
+  const [recording,    setRecording]    = useState(false)
+  const [elapsed,      setElapsed]      = useState(0)
+  const [ready,        setReady]        = useState(false)
+  const [error,        setError]        = useState<string | null>(null)
+  const [filter,       setFilter]       = useState<Filter>(FILTERS[0])
+
+  // zoom / flash UI state
+  const [zoom,         setZoom]         = useState(1)
+  const [maxZoom,      setMaxZoom]      = useState(5)
+  const [flashEnabled, setFlashEnabled] = useState(false)
+  const [hasTorch,     setHasTorch]     = useState(false)
+  const [showFlash,    setShowFlash]    = useState(false)
 
   const MAX_SECS = 30
 
   const startCamera = useCallback(async () => {
     if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop())
     setReady(false)
+    // reset zoom + flash for new stream
+    zoomRef.current = 1
+    setZoom(1)
+    flashEnabledRef.current = false
+    setFlashEnabled(false)
+    hasTorchRef.current = false
+    setHasTorch(false)
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 } },
         audio: mode === 'video',
       })
       streamRef.current = stream
+
+      // probe capabilities
+      const track = stream.getVideoTracks()[0]
+      if (track) {
+        const caps = track.getCapabilities() as any
+        if (caps.zoom) {
+          hasHardwareZoomRef.current = true
+          const hw = Math.min(caps.zoom.max ?? 5, 10)
+          maxZoomRef.current = hw
+          setMaxZoom(hw)
+        } else {
+          hasHardwareZoomRef.current = false
+          maxZoomRef.current = 5  // software zoom up to 5x
+          setMaxZoom(5)
+        }
+        if (caps.torch) {
+          hasTorchRef.current = true
+          setHasTorch(true)
+        }
+      }
+
       if (videoRef.current) {
         videoRef.current.srcObject = stream
         await videoRef.current.play()
@@ -106,15 +149,55 @@ export default function CameraView({ onCapture, photosLeft, videosLeft }: Props)
     return () => clearInterval(id)
   }, [recording])
 
+  const handleZoom = useCallback((newZoom: number) => {
+    const clamped = Math.max(1, Math.min(maxZoomRef.current, Math.round(newZoom * 10) / 10))
+    zoomRef.current = clamped
+    setZoom(clamped)
+    const track = streamRef.current?.getVideoTracks()[0]
+    if (track && hasHardwareZoomRef.current) {
+      track.applyConstraints({ advanced: [{ zoom: clamped } as any] }).catch(() => {})
+    }
+  }, [])
+
+  const toggleFlash = useCallback(() => {
+    const next = !flashEnabledRef.current
+    flashEnabledRef.current = next
+    setFlashEnabled(next)
+    const track = streamRef.current?.getVideoTracks()[0]
+    if (track && hasTorchRef.current) {
+      track.applyConstraints({ advanced: [{ torch: next } as any] }).catch(() => {})
+    }
+  }, [])
+
   const capturePhoto = useCallback(() => {
     const video  = videoRef.current
     const canvas = canvasRef.current
     if (!video || !canvas) return
-    canvas.width  = video.videoWidth
-    canvas.height = video.videoHeight
+
+    // screen flash effect
+    if (flashEnabledRef.current) {
+      setShowFlash(true)
+      setTimeout(() => setShowFlash(false), 250)
+    }
+
+    const vw = video.videoWidth
+    const vh = video.videoHeight
+    canvas.width  = vw
+    canvas.height = vh
     const ctx = canvas.getContext('2d')!
     if (filter.css !== 'none') ctx.filter = filter.css
-    ctx.drawImage(video, 0, 0)
+
+    if (hasHardwareZoomRef.current || zoomRef.current <= 1) {
+      ctx.drawImage(video, 0, 0)
+    } else {
+      // software zoom: crop the centre region
+      const cropW = vw / zoomRef.current
+      const cropH = vh / zoomRef.current
+      const cropX = (vw - cropW) / 2
+      const cropY = (vh - cropH) / 2
+      ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, vw, vh)
+    }
+
     ctx.filter = 'none'
     applyGrain(ctx, canvas.width, canvas.height, filter.grain)
     canvas.toBlob((blob) => {
@@ -170,6 +253,9 @@ export default function CameraView({ onCapture, photosLeft, videosLeft }: Props)
     ? `${photosLeft} photo${photosLeft !== 1 ? 's' : ''} left`
     : `${videosLeft} video${videosLeft !== 1 ? 's' : ''} left`
 
+  // which zoom steps to show (at most 3 buttons)
+  const zoomSteps = maxZoom >= 5 ? [1, 2, 5] : maxZoom >= 3 ? [1, 2, 3] : maxZoom >= 2 ? [1, 2] : [1]
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center gap-5 p-8 text-center" style={{ minHeight: '55vh' }}>
@@ -191,11 +277,20 @@ export default function CameraView({ onCapture, photosLeft, videosLeft }: Props)
           muted
           style={{
             width: '100%', height: '100%', objectFit: 'cover',
-            transform: facing === 'user' ? 'scaleX(-1)' : 'none',
+            transform: `${facing === 'user' ? 'scaleX(-1) ' : ''}scale(${hasHardwareZoomRef.current ? 1 : zoom})`,
             filter: filter.css === 'none' ? undefined : filter.css,
+            transition: 'transform 0.15s ease',
           }}
         />
         <canvas ref={canvasRef} className="hidden" />
+
+        {/* Screen flash overlay */}
+        {showFlash && (
+          <div style={{
+            position: 'absolute', inset: 0, background: '#fff', pointerEvents: 'none',
+            animation: 'screenflash 250ms ease-out forwards',
+          }} />
+        )}
 
         {/* Loading overlay */}
         {!ready && (
@@ -204,7 +299,7 @@ export default function CameraView({ onCapture, photosLeft, videosLeft }: Props)
           </div>
         )}
 
-        {/* Recording timer */}
+        {/* Recording timer (top-left) */}
         {recording && (
           <div style={{ position: 'absolute', top: 14, left: 14, display: 'flex', alignItems: 'center', gap: 7, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(12px)', borderRadius: 99, padding: '5px 13px' }}>
             <div className="blink" style={{ width: 8, height: 8, borderRadius: '50%', background: '#ffffff' }} />
@@ -214,7 +309,27 @@ export default function CameraView({ onCapture, photosLeft, videosLeft }: Props)
           </div>
         )}
 
-        {/* Remaining counter */}
+        {/* Flash button (top-left, photo mode only) */}
+        {!recording && isPhotoMode && (
+          <button
+            onClick={toggleFlash}
+            style={{
+              position: 'absolute', top: 12, left: 14,
+              background: flashEnabled ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.45)',
+              color: flashEnabled ? '#000' : 'rgba(255,255,255,0.7)',
+              border: 'none', borderRadius: 99,
+              width: 38, height: 38,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', backdropFilter: 'blur(12px)',
+              transition: 'background 0.15s, color 0.15s',
+            }}
+            title={flashEnabled ? 'Flash on' : 'Flash off'}
+          >
+            <FlashIcon size={17} filled={flashEnabled} />
+          </button>
+        )}
+
+        {/* Remaining counter (top-right) */}
         <div style={{ position: 'absolute', top: 14, right: 14, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(12px)', borderRadius: 99, padding: '5px 13px' }}>
           <span style={{ fontSize: 12, fontWeight: remaining <= 1 ? 700 : 500, color: 'rgba(255,255,255,0.85)' }}>
             {limitLabel}
@@ -225,36 +340,68 @@ export default function CameraView({ onCapture, photosLeft, videosLeft }: Props)
         <div
           style={{
             position: 'absolute', bottom: 0, left: 0, right: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '20px 32px 28px',
-            background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            paddingBottom: 28,
+            background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 100%)',
           }}
         >
-          {/* Flip */}
-          <button
-            onClick={() => setFacing((f) => (f === 'environment' ? 'user' : 'environment'))}
-            className="btn-circle"
-            style={{ width: 48, height: 48 }}
-          >
-            <FlipCameraIcon size={20} />
-          </button>
+          {/* Zoom buttons */}
+          {zoomSteps.length > 1 && (
+            <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
+              {zoomSteps.map((z) => {
+                const active = Math.abs(zoom - z) < 0.25
+                return (
+                  <button
+                    key={z}
+                    onClick={() => handleZoom(z)}
+                    style={{
+                      background: active ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.45)',
+                      color: active ? '#000' : 'rgba(255,255,255,0.8)',
+                      border: 'none', borderRadius: 99,
+                      fontSize: 12, fontWeight: 700,
+                      padding: '5px 12px',
+                      backdropFilter: 'blur(12px)',
+                      cursor: 'pointer',
+                      letterSpacing: '0.02em',
+                      transition: 'background 0.15s, color 0.15s',
+                      minWidth: 38, textAlign: 'center',
+                    }}
+                  >
+                    {z}×
+                  </button>
+                )
+              })}
+            </div>
+          )}
 
-          {/* Shutter */}
-          <button
-            onClick={handleCapture}
-            disabled={!ready || !canCapture}
-            className={`btn-shutter ${mode === 'video' ? 'video-mode' : ''} ${recording ? 'recording pulse-record' : ''}`}
-            style={{ width: 76, height: 76 }}
-          />
+          {/* Main controls row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '0 32px' }}>
+            {/* Flip */}
+            <button
+              onClick={() => setFacing((f) => (f === 'environment' ? 'user' : 'environment'))}
+              className="btn-circle"
+              style={{ width: 48, height: 48 }}
+            >
+              <FlipCameraIcon size={20} />
+            </button>
 
-          {/* Mode toggle */}
-          <button
-            onClick={toggleMode}
-            className="btn-circle"
-            style={{ width: 48, height: 48 }}
-          >
-            {mode === 'photo' ? <VideoIcon size={19} /> : <CameraIcon size={19} />}
-          </button>
+            {/* Shutter */}
+            <button
+              onClick={handleCapture}
+              disabled={!ready || !canCapture}
+              className={`btn-shutter ${mode === 'video' ? 'video-mode' : ''} ${recording ? 'recording pulse-record' : ''}`}
+              style={{ width: 76, height: 76 }}
+            />
+
+            {/* Mode toggle */}
+            <button
+              onClick={toggleMode}
+              className="btn-circle"
+              style={{ width: 48, height: 48 }}
+            >
+              {mode === 'photo' ? <VideoIcon size={19} /> : <CameraIcon size={19} />}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -272,7 +419,6 @@ export default function CameraView({ onCapture, photosLeft, videosLeft }: Props)
               border: filter.id === f.id ? '2px solid rgba(255,255,255,0.6)' : '2px solid transparent',
               flexShrink: 0,
             }}>
-              {/* Placeholder gradient to show filter color cast */}
               <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #4a3728 0%, #8b7355 40%, #c4a882 100%)' }} />
             </div>
             <span>{f.label}</span>

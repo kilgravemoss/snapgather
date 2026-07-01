@@ -10,9 +10,10 @@ export async function GET(
   const { eventCode } = await params
   const event = await prisma.event.findUnique({
     where: { eventCode: eventCode.toUpperCase() },
-    select: { id: true, name: true, description: true, eventCode: true, createdAt: true },
+    select: { id: true, name: true, description: true, eventCode: true, createdAt: true, guestPasswordHash: true },
   })
 
   if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 })
-  return NextResponse.json(event)
+  const { guestPasswordHash, ...eventData } = event
+  return NextResponse.json({ ...eventData, hasGuestPassword: !!guestPasswordHash })
 }

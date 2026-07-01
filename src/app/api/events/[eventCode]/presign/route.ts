@@ -3,6 +3,7 @@ import { PutObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { prisma } from '@/lib/db'
 import { r2, BUCKET } from '@/lib/r2'
+import { getGuestSession } from '@/lib/auth'
 import { v4 as uuid } from 'uuid'
 
 export const dynamic = 'force-dynamic'
@@ -42,9 +43,14 @@ export async function POST(
 
     const event = await prisma.event.findUnique({
       where: { eventCode: eventCode.toUpperCase() },
-      select: { id: true },
+      select: { id: true, guestPasswordHash: true },
     })
     if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 })
+
+    if (event.guestPasswordHash) {
+      const session = await getGuestSession(event.id)
+      if (!session) return NextResponse.json({ error: 'Guest authentication required' }, { status: 401 })
+    }
 
     // Enforce per-session limits
     const existingUploads = await prisma.upload.findMany({

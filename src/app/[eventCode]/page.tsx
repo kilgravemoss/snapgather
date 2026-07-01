@@ -3,14 +3,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import CameraView, { CaptureResult } from '@/components/CameraView'
-import { ArrowLeftIcon, CheckIcon, GalleryIcon, SpinnerIcon } from '@/components/Icons'
+import { ArrowLeftIcon, CheckIcon, GalleryIcon, LockIcon, SpinnerIcon } from '@/components/Icons'
 import { formatBytes, formatDate } from '@/lib/utils'
 
 const MAX_PHOTOS = 10
 const MAX_VIDEOS = 3
 const FIVE_HOURS = 5 * 60 * 60 * 1000
 
-type Phase = 'loading' | 'camera' | 'preview' | 'uploading' | 'success' | 'gallery'
+type Phase = 'loading' | 'guest-auth' | 'camera' | 'preview' | 'uploading' | 'success' | 'gallery'
 
 interface Upload {
   id: string
@@ -25,6 +25,7 @@ interface Event {
   name: string
   description: string | null
   eventCode: string
+  hasGuestPassword: boolean
 }
 
 function uploadToR2(url: string, blob: Blob, onProgress: (p: number) => void): Promise<void> {
@@ -61,10 +62,13 @@ export default function GuestPage() {
   const [progress,    setProgress]    = useState(0)
   const [uploadError, setUploadError] = useState('')
   const [myUploads,   setMyUploads]   = useState<Upload[]>([])
-  const [galleryLoading, setGalleryLoading] = useState(false)
-  const [lightbox,    setLightbox]    = useState<Upload | null>(null)
-  const [photosUsed,  setPhotosUsed]  = useState(0)
-  const [videosUsed,  setVideosUsed]  = useState(0)
+  const [galleryLoading,  setGalleryLoading]  = useState(false)
+  const [lightbox,        setLightbox]        = useState<Upload | null>(null)
+  const [photosUsed,      setPhotosUsed]      = useState(0)
+  const [videosUsed,      setVideosUsed]      = useState(0)
+  const [guestPassword,   setGuestPassword]   = useState('')
+  const [guestAuthError,  setGuestAuthError]  = useState('')
+  const [guestAuthLoading, setGuestAuthLoading] = useState(false)
   const sessionRef = useRef<string>('')
 
   useEffect(() => {
@@ -75,16 +79,49 @@ export default function GuestPage() {
         if (!data) { setNotFound(true); return }
         setEvent(data)
         saveLastEvent(data.eventCode, data.name)
-        setPhase('camera')
-        // Load usage counts
-        const res = await fetch(`/api/events/${code}/uploads?sessionId=${sessionRef.current}`)
-        if (res.ok) {
-          const { uploads } = await res.json()
-          setPhotosUsed(uploads.filter((u: Upload) => u.fileType === 'photo').length)
-          setVideosUsed(uploads.filter((u: Upload) => u.fileType === 'video').length)
+
+        if (data.hasGuestPassword) {
+          const authRes = await fetch(`/api/events/${code}/guest-auth`)
+          if (authRes.ok) {
+            const { authenticated } = await authRes.json()
+            if (!authenticated) { setPhase('guest-auth'); return }
+          } else {
+            setPhase('guest-auth'); return
+          }
         }
+
+        await loadUsageCounts()
+        setPhase('camera')
       })
   }, [code])
+
+  async function loadUsageCounts() {
+    const res = await fetch(`/api/events/${code}/uploads?sessionId=${sessionRef.current}`)
+    if (res.ok) {
+      const { uploads } = await res.json()
+      setPhotosUsed(uploads.filter((u: Upload) => u.fileType === 'photo').length)
+      setVideosUsed(uploads.filter((u: Upload) => u.fileType === 'video').length)
+    }
+  }
+
+  async function handleGuestAuth(e: React.FormEvent) {
+    e.preventDefault()
+    setGuestAuthError('')
+    setGuestAuthLoading(true)
+    const res = await fetch(`/api/events/${code}/guest-auth`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: guestPassword }),
+    })
+    if (res.ok) {
+      await loadUsageCounts()
+      setPhase('camera')
+    } else {
+      const d = await res.json()
+      setGuestAuthError(d.error || 'Incorrect password')
+    }
+    setGuestAuthLoading(false)
+  }
 
   async function handleCapture(result: CaptureResult) {
     setCapture(result)
@@ -175,6 +212,51 @@ export default function GuestPage() {
     return (
       <main className="flex items-center justify-center min-h-screen">
         <div className="spin" style={{ width: 28, height: 28, border: '2.5px solid rgba(255,255,255,0.1)', borderTopColor: '#fff', borderRadius: '50%' }} />
+      </main>
+    )
+  }
+
+  if (phase === 'guest-auth') {
+    return (
+      <main className="relative flex flex-col items-center justify-center min-h-screen px-5">
+        <div className="orb" style={{ width: 350, height: 350, background: '#fff', top: '-10%', right: '-20%', opacity: 0.1 }} />
+        <div className="relative z-10 w-full max-w-sm flex flex-col gap-6 fade-up">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <div className="btn-circle" style={{ width: 64, height: 64, fontSize: 28, cursor: 'default' }}>
+              <LockIcon size={26} />
+            </div>
+            <div>
+              <h1 style={{ fontSize: 20, fontWeight: 700 }}>{event?.name || 'Private event'}</h1>
+              <p style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 4 }}>Enter the guest password to join</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleGuestAuth} className="glass p-6 flex flex-col gap-4">
+            <input
+              className="input-glass"
+              type="password"
+              placeholder="Guest password"
+              value={guestPassword}
+              onChange={(e) => { setGuestPassword(e.target.value); setGuestAuthError('') }}
+              autoFocus
+            />
+            {guestAuthError && (
+              <p style={{ color: 'var(--text-2)', fontSize: 13, textAlign: 'center' }}>{guestAuthError}</p>
+            )}
+            <button
+              type="submit"
+              disabled={guestAuthLoading || !guestPassword}
+              className="btn-pill btn-pill-purple w-full"
+              style={{ justifyContent: 'center' }}
+            >
+              {guestAuthLoading ? 'Verifying…' : 'Join event'}
+            </button>
+          </form>
+
+          <a href="/" style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', textDecoration: 'none' }}>
+            ← Back to home
+          </a>
+        </div>
       </main>
     )
   }

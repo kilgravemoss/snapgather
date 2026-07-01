@@ -10,6 +10,7 @@ export default function CreateEvent() {
   const [description, setDescription] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [guestPassword, setGuestPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [created, setCreated] = useState<{ eventCode: string } | null>(null)
@@ -25,7 +26,7 @@ export default function CreateEvent() {
       const res = await fetch('/api/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, password }),
+        body: JSON.stringify({ name, description, password, guestPassword: guestPassword.trim() || undefined }),
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Something went wrong'); return }
@@ -151,6 +152,22 @@ export default function CreateEvent() {
               onChange={(e) => setConfirm(e.target.value)}
               required
             />
+          </div>
+
+          <div style={{ height: 1, background: 'var(--border)' }} />
+
+          <div className="flex flex-col gap-2">
+            <label style={{ fontSize: 13, color: 'var(--text-muted)' }}>Guest password <span style={{ opacity: 0.55 }}>(optional)</span></label>
+            <input
+              className="input-glass"
+              type="password"
+              placeholder="Leave blank — anyone with the link can join"
+              value={guestPassword}
+              onChange={(e) => setGuestPassword(e.target.value)}
+            />
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.55 }}>
+              If set, guests must enter this password before they can take or upload photos.
+            </p>
           </div>
 
           {error && (
