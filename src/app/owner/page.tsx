@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { TrashIcon, DownloadIcon, LogOutIcon, RefreshIcon, SpinnerIcon, XIcon } from '@/components/Icons'
+import { TrashIcon, DownloadIcon, LogOutIcon, RefreshIcon, SpinnerIcon, XIcon, CopyIcon, CheckIcon } from '@/components/Icons'
 import { formatBytes, formatDate } from '@/lib/utils'
 
 interface EventStat {
@@ -14,6 +14,15 @@ interface EventStat {
   photoCount: number
   videoCount: number
   totalSize: number
+}
+
+interface CreationToken {
+  id: string
+  token: string
+  used: boolean
+  usedAt: string | null
+  note: string | null
+  createdAt: string
 }
 
 type Phase = 'login' | 'dashboard'
@@ -30,6 +39,13 @@ export default function OwnerPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<EventStat | null>(null)
 
+  const [tokens, setTokens] = useState<CreationToken[]>([])
+  const [tokensLoading, setTokensLoading] = useState(false)
+  const [generatingToken, setGeneratingToken] = useState(false)
+  const [newTokenNote, setNewTokenNote] = useState('')
+  const [showTokenForm, setShowTokenForm] = useState(false)
+  const [copiedToken, setCopiedToken] = useState<string | null>(null)
+
   async function login(e: React.FormEvent) {
     e.preventDefault()
     setLoginError('')
@@ -42,6 +58,7 @@ export default function OwnerPage() {
     if (res.ok) {
       setPhase('dashboard')
       loadEvents()
+      loadTokens()
     } else {
       setLoginError('Invalid secret key')
     }
@@ -53,6 +70,7 @@ export default function OwnerPage() {
     setPhase('login')
     setSecret('')
     setEvents([])
+    setTokens([])
   }
 
   async function loadEvents() {
@@ -67,8 +85,19 @@ export default function OwnerPage() {
     setLoading(false)
   }
 
+  async function loadTokens() {
+    setTokensLoading(true)
+    const res = await fetch('/api/owner/tokens')
+    if (res.ok) {
+      const data = await res.json()
+      setTokens(data.tokens)
+    }
+    setTokensLoading(false)
+  }
+
   useEffect(() => {
     loadEvents()
+    loadTokens()
   }, [])
 
   async function deleteEvent(id: string) {
@@ -87,6 +116,31 @@ export default function OwnerPage() {
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
+  }
+
+  async function generateToken() {
+    setGeneratingToken(true)
+    const res = await fetch('/api/owner/tokens', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note: newTokenNote.trim() || null }),
+    })
+    if (res.ok) {
+      const token = await res.json()
+      setTokens((prev) => [token, ...prev])
+      setNewTokenNote('')
+      setShowTokenForm(false)
+      navigator.clipboard.writeText(token.token).catch(() => {})
+      setCopiedToken(token.id)
+      setTimeout(() => setCopiedToken(null), 3000)
+    }
+    setGeneratingToken(false)
+  }
+
+  function copyToken(t: CreationToken) {
+    navigator.clipboard.writeText(t.token).catch(() => {})
+    setCopiedToken(t.id)
+    setTimeout(() => setCopiedToken(null), 2000)
   }
 
   if (phase === 'login') {
@@ -139,7 +193,7 @@ export default function OwnerPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={loadEvents} disabled={loading} className="btn-circle" style={{ width: 40, height: 40 }} title="Refresh">
+            <button onClick={() => { loadEvents(); loadTokens() }} disabled={loading} className="btn-circle" style={{ width: 40, height: 40 }} title="Refresh">
               {loading ? <SpinnerIcon size={16} /> : <RefreshIcon size={18} />}
             </button>
             <button onClick={logout} className="btn-circle" style={{ width: 40, height: 40 }} title="Sign out">
@@ -149,80 +203,178 @@ export default function OwnerPage() {
         </div>
       </div>
 
-      {/* Events list */}
-      <div className="relative z-10 flex-1 p-4 flex flex-col gap-3">
-        {loading && events.length === 0 ? (
-          <div className="flex justify-center py-20"><SpinnerIcon size={32} /></div>
-        ) : events.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
-            <div style={{ fontSize: 48 }}>📭</div>
-            <p style={{ color: 'var(--text-muted)' }}>No events yet</p>
+      <div className="relative z-10 flex-1 p-4 flex flex-col gap-6">
+
+        {/* ── Creation Codes ── */}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.06em', color: 'var(--text-muted)' }}>CREATION CODES</p>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3, lineHeight: 1.5 }}>
+                Each code lets one customer create one event. Share it after they pay.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowTokenForm((v) => !v)}
+              className="btn-pill btn-pill-purple"
+              style={{ flexShrink: 0, fontSize: 13, padding: '8px 14px' }}
+            >
+              + Generate
+            </button>
           </div>
-        ) : (
-          events.map((ev) => (
-            <div key={ev.id} className="glass fade-up" style={{ padding: '18px 20px' }}>
-              <div className="flex items-start justify-between gap-4">
-                {/* Info */}
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 style={{ fontSize: 16, fontWeight: 700 }}>{ev.name}</h2>
-                    <span style={{
-                      fontSize: 11, fontWeight: 700, letterSpacing: '0.08em',
-                      background: 'rgba(255,255,255,0.1)', color: 'var(--text-2)',
-                      borderRadius: 6, padding: '2px 8px'
-                    }}>
-                      {ev.eventCode}
-                    </span>
-                  </div>
-                  {ev.description && (
-                    <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 2 }}>{ev.description}</p>
-                  )}
 
-                  {/* Stats row */}
-                  <div className="flex flex-wrap gap-4" style={{ marginTop: 12 }}>
-                    <div>
-                      <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>PHOTOS</p>
-                      <p style={{ fontSize: 18, fontWeight: 700 }}>{ev.photoCount}</p>
-                    </div>
-                    <div>
-                      <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>VIDEOS</p>
-                      <p style={{ fontSize: 18, fontWeight: 700 }}>{ev.videoCount}</p>
-                    </div>
-                    <div>
-                      <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>TOTAL SIZE</p>
-                      <p style={{ fontSize: 18, fontWeight: 700 }}>{formatBytes(ev.totalSize)}</p>
-                    </div>
-                    <div>
-                      <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>CREATED</p>
-                      <p style={{ fontSize: 14, fontWeight: 500 }}>{formatDate(ev.createdAt)}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-col gap-2 flex-shrink-0">
-                  <button
-                    onClick={() => downloadEvent(ev.id)}
-                    disabled={ev.uploadCount === 0}
-                    className="btn-circle btn-circle-purple"
-                    style={{ width: 40, height: 40 }}
-                    title="Download all files"
-                  >
-                    <DownloadIcon size={17} />
-                  </button>
-                  <button
-                    onClick={() => setConfirmDelete(ev)}
-                    className="btn-circle btn-circle-danger"
-                    style={{ width: 40, height: 40 }}
-                    title="Delete event"
-                  >
-                    <TrashIcon size={16} />
-                  </button>
-                </div>
+          {showTokenForm && (
+            <div className="glass fade-up" style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <input
+                className="input-glass"
+                placeholder="Label (optional) — e.g. John's wedding"
+                value={newTokenNote}
+                onChange={(e) => setNewTokenNote(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); generateToken() } }}
+              />
+              <div className="flex gap-2">
+                <button onClick={() => setShowTokenForm(false)} className="btn-pill" style={{ flex: 1, justifyContent: 'center', fontSize: 13 }}>
+                  Cancel
+                </button>
+                <button
+                  onClick={generateToken}
+                  disabled={generatingToken}
+                  className="btn-pill btn-pill-purple"
+                  style={{ flex: 1, justifyContent: 'center', fontSize: 13 }}
+                >
+                  {generatingToken ? <SpinnerIcon size={14} /> : 'Generate & copy'}
+                </button>
               </div>
             </div>
-          ))
-        )}
+          )}
+
+          {tokensLoading ? (
+            <div className="flex justify-center py-6"><SpinnerIcon size={24} /></div>
+          ) : tokens.length === 0 ? (
+            <div className="glass" style={{ padding: '18px', textAlign: 'center' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>No codes yet — generate one to get started</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {tokens.map((t) => (
+                <div key={t.id} className="glass fade-up" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span style={{
+                        fontFamily: 'monospace', fontSize: 15, fontWeight: 700,
+                        letterSpacing: '0.1em',
+                        color: t.used ? 'var(--text-muted)' : 'var(--text)',
+                        textDecoration: t.used ? 'line-through' : 'none',
+                      }}>
+                        {t.token}
+                      </span>
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, letterSpacing: '0.06em',
+                        padding: '2px 7px', borderRadius: 99,
+                        background: t.used ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.13)',
+                        color: t.used ? 'var(--text-muted)' : 'var(--text-2)',
+                      }}>
+                        {t.used ? 'USED' : 'UNUSED'}
+                      </span>
+                    </div>
+                    {t.note && (
+                      <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{t.note}</p>
+                    )}
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                      Created {formatDate(t.createdAt)}{t.usedAt ? ` · Used ${formatDate(t.usedAt)}` : ''}
+                    </p>
+                  </div>
+                  {!t.used && (
+                    <button
+                      onClick={() => copyToken(t)}
+                      className="btn-circle"
+                      style={{ width: 36, height: 36, flexShrink: 0 }}
+                      title="Copy code"
+                    >
+                      {copiedToken === t.id ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Events ── */}
+        <div className="flex flex-col gap-3">
+          <p style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.06em', color: 'var(--text-muted)' }}>EVENTS</p>
+
+          {loading && events.length === 0 ? (
+            <div className="flex justify-center py-20"><SpinnerIcon size={32} /></div>
+          ) : events.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
+              <div style={{ fontSize: 48 }}>📭</div>
+              <p style={{ color: 'var(--text-muted)' }}>No events yet</p>
+            </div>
+          ) : (
+            events.map((ev) => (
+              <div key={ev.id} className="glass fade-up" style={{ padding: '18px 20px' }}>
+                <div className="flex items-start justify-between gap-4">
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 style={{ fontSize: 16, fontWeight: 700 }}>{ev.name}</h2>
+                      <span style={{
+                        fontSize: 11, fontWeight: 700, letterSpacing: '0.08em',
+                        background: 'rgba(255,255,255,0.1)', color: 'var(--text-2)',
+                        borderRadius: 6, padding: '2px 8px'
+                      }}>
+                        {ev.eventCode}
+                      </span>
+                    </div>
+                    {ev.description && (
+                      <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 2 }}>{ev.description}</p>
+                    )}
+
+                    <div className="flex flex-wrap gap-4" style={{ marginTop: 12 }}>
+                      <div>
+                        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>PHOTOS</p>
+                        <p style={{ fontSize: 18, fontWeight: 700 }}>{ev.photoCount}</p>
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>VIDEOS</p>
+                        <p style={{ fontSize: 18, fontWeight: 700 }}>{ev.videoCount}</p>
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>TOTAL SIZE</p>
+                        <p style={{ fontSize: 18, fontWeight: 700 }}>{formatBytes(ev.totalSize)}</p>
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>CREATED</p>
+                        <p style={{ fontSize: 14, fontWeight: 500 }}>{formatDate(ev.createdAt)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => downloadEvent(ev.id)}
+                      disabled={ev.uploadCount === 0}
+                      className="btn-circle btn-circle-purple"
+                      style={{ width: 40, height: 40 }}
+                      title="Download all files"
+                    >
+                      <DownloadIcon size={17} />
+                    </button>
+                    <button
+                      onClick={() => setConfirmDelete(ev)}
+                      className="btn-circle btn-circle-danger"
+                      style={{ width: 40, height: 40 }}
+                      title="Delete event"
+                    >
+                      <TrashIcon size={16} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       {/* Delete confirmation modal */}

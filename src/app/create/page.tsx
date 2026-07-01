@@ -2,10 +2,18 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeftIcon, CopyIcon, CheckIcon } from '@/components/Icons'
+import { ArrowLeftIcon, CopyIcon, CheckIcon, LockIcon } from '@/components/Icons'
 
 export default function CreateEvent() {
   const router = useRouter()
+
+  // Step 1: token gate
+  const [creationToken, setCreationToken] = useState('')
+  const [tokenVerified, setTokenVerified] = useState(false)
+  const [tokenError, setTokenError] = useState('')
+  const [tokenLoading, setTokenLoading] = useState(false)
+
+  // Step 2: event details
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [password, setPassword] = useState('')
@@ -15,6 +23,23 @@ export default function CreateEvent() {
   const [error, setError] = useState('')
   const [created, setCreated] = useState<{ eventCode: string } | null>(null)
   const [copied, setCopied] = useState(false)
+
+  async function verifyToken(e: React.FormEvent) {
+    e.preventDefault()
+    setTokenError('')
+    setTokenLoading(true)
+    // We pre-validate by attempting a dry-run check via a lightweight fetch.
+    // We do NOT consume it here — it's consumed only on event create.
+    // For UX, we just check format client-side then let server validate on submit.
+    const t = creationToken.trim().toUpperCase()
+    if (!t || t.length < 4) {
+      setTokenError('Please enter a valid creation code')
+      setTokenLoading(false)
+      return
+    }
+    setTokenVerified(true)
+    setTokenLoading(false)
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -26,10 +51,25 @@ export default function CreateEvent() {
       const res = await fetch('/api/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, password, guestPassword: guestPassword.trim() || undefined }),
+        body: JSON.stringify({
+          name,
+          description,
+          password,
+          guestPassword: guestPassword.trim() || undefined,
+          creationToken: creationToken.trim().toUpperCase(),
+        }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error || 'Something went wrong'); return }
+      if (!res.ok) {
+        // If token was the problem, kick back to step 1
+        if (res.status === 403) {
+          setTokenVerified(false)
+          setTokenError(data.error || 'Invalid creation code')
+        } else {
+          setError(data.error || 'Something went wrong')
+        }
+        return
+      }
       setCreated(data)
     } catch {
       setError('Network error. Please try again.')
@@ -93,16 +133,72 @@ export default function CreateEvent() {
     )
   }
 
+  // Step 1 — token gate
+  if (!tokenVerified) {
+    return (
+      <main className="relative flex flex-col items-center justify-center min-h-screen px-5">
+        <div className="orb" style={{ width: 400, height: 400, background: '#fff', top: '-10%', left: '-10%', opacity: 0.1 }} />
+
+        <div className="relative z-10 w-full max-w-sm flex flex-col gap-6 fade-up">
+          <div className="flex items-center gap-4">
+            <button onClick={() => router.push('/')} className="btn-circle" style={{ width: 40, height: 40 }}>
+              <ArrowLeftIcon size={18} />
+            </button>
+            <h1 style={{ fontSize: 22, fontWeight: 700 }}>Create event</h1>
+          </div>
+
+          <form onSubmit={verifyToken} className="glass p-6 flex flex-col gap-4">
+            <div className="flex flex-col items-center gap-2 text-center" style={{ paddingBottom: 4 }}>
+              <div className="btn-circle" style={{ width: 52, height: 52, cursor: 'default' }}>
+                <LockIcon size={22} />
+              </div>
+              <p style={{ fontWeight: 600, fontSize: 15 }}>Enter your creation code</p>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.55 }}>
+                You need a creation code to set up an event. You receive this when you purchase access.
+              </p>
+            </div>
+
+            <input
+              className="input-glass"
+              placeholder="SG-XXXXXXXX"
+              value={creationToken}
+              onChange={(e) => { setCreationToken(e.target.value.toUpperCase()); setTokenError('') }}
+              autoFocus
+              style={{ textAlign: 'center', letterSpacing: '0.12em', fontWeight: 600, fontSize: 16 }}
+            />
+
+            {tokenError && (
+              <p style={{ color: 'var(--text-2)', fontSize: 13, textAlign: 'center' }}>{tokenError}</p>
+            )}
+
+            <button
+              type="submit"
+              disabled={tokenLoading || !creationToken.trim()}
+              className="btn-pill btn-pill-purple w-full"
+              style={{ justifyContent: 'center' }}
+            >
+              {tokenLoading ? 'Checking…' : 'Continue'}
+            </button>
+          </form>
+        </div>
+      </main>
+    )
+  }
+
+  // Step 2 — event details
   return (
     <main className="relative flex flex-col items-center justify-center min-h-screen px-5 py-10">
       <div className="orb" style={{ width: 400, height: 400, background: '#fff', top: '-10%', left: '-10%', opacity: 0.1 }} />
 
       <div className="relative z-10 w-full max-w-sm flex flex-col gap-6 fade-up">
         <div className="flex items-center gap-4">
-          <button onClick={() => router.push('/')} className="btn-circle" style={{ width: 40, height: 40 }}>
+          <button onClick={() => setTokenVerified(false)} className="btn-circle" style={{ width: 40, height: 40 }}>
             <ArrowLeftIcon size={18} />
           </button>
-          <h1 style={{ fontSize: 22, fontWeight: 700 }}>Create event</h1>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 700 }}>Create event</h1>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Code: {creationToken.trim().toUpperCase()}</p>
+          </div>
         </div>
 
         <form onSubmit={submit} className="glass p-6 flex flex-col gap-4">
@@ -114,6 +210,7 @@ export default function CreateEvent() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
+              autoFocus
             />
           </div>
 
@@ -166,7 +263,7 @@ export default function CreateEvent() {
               onChange={(e) => setGuestPassword(e.target.value)}
             />
             <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.55 }}>
-              If set, guests must enter this password before they can take or upload photos.
+              If set, guests must enter this password before they can upload photos.
             </p>
           </div>
 

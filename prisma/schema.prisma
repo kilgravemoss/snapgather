@@ -18,6 +18,15 @@ model Event {
   uploads      Upload[]
 }
 
+model CreationToken {
+  id        String    @id @default(cuid())
+  token     String    @unique
+  used      Boolean   @default(false)
+  usedAt    DateTime?
+  note      String?
+  createdAt DateTime  @default(now())
+}
+
 model Upload {
   id         String   @id @default(cuid())
   eventId    String
